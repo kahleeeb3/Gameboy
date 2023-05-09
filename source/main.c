@@ -5,6 +5,42 @@
 OBJ_ATTR obj_buffer[128]; // allocate space for 128 sprites
 OBJ_ATTR *player= &obj_buffer[0]; // define the player sprite
 
+
+void input()
+{
+
+	while(1)
+	{
+		vid_vsync(); // wait for VBlank
+		key_poll(); // poll user input
+			
+		u16 frame1 = 0; // first frame
+		u16 frame2 = 16; // second frame
+		u16 frame3 = 32; // third frame
+		u16 frame4 = 48; // fourth frame
+		
+		if(key_hit(KEY_LEFT))
+			player->attr2 = frame1;
+			
+		if(key_hit(KEY_RIGHT))
+			player->attr2 = frame2;
+
+		if(key_hit(KEY_UP))
+			player->attr2 = frame3;
+
+		if(key_hit(KEY_DOWN))
+			player->attr2 = frame4;
+		
+		if(key_hit(KEY_A))
+			player->attr2 = (player->attr2 + 16) % 64;
+		
+		oam_copy(oam_mem, obj_buffer, 1);	// update 1 sprite in obj_buffer
+
+	}
+}
+
+
+
 int main()
 {
 	
@@ -28,7 +64,10 @@ int main()
 	// update 1 sprite of data in OAM
 	oam_copy(oam_mem, obj_buffer, 1);
 	
-	while(1);
+	// while(1);
+
+	// take input
+	input();
 
 	return 0;
 }
