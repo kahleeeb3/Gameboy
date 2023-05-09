@@ -1,6 +1,8 @@
 #include <string.h>
 #include <tonc.h>
 #include "player.h"
+#include "apple.h"
+#include "squirrel.h"
 #include <stdbool.h>
 
 
@@ -13,6 +15,8 @@
 
 OBJ_ATTR obj_buffer[128]; // allocate space for 128 sprites
 OBJ_ATTR *player= &obj_buffer[0]; // define the player sprite
+OBJ_ATTR *apple = &obj_buffer[1]; // define the apple sprite
+OBJ_ATTR *squirrel = &obj_buffer[2]; // define the squirrel sprite
 
 int x= 96, y= 32; // default player position
 int frame=0; // frame count to slow polling
@@ -102,12 +106,58 @@ void input()
 
 
 void create_player_sprite(){
-	memcpy(&tile_mem[4][0], playerTiles, playerTilesLen); // copy sprite tiles
-    memcpy(pal_obj_mem, playerPal, playerPalLen); // copy sprite pallets
-	obj_set_attr(player, ATTR0_4BPP, ATTR1_SIZE_32,0); // set attributes
-	obj_set_pos(player, x, y); // set position
-	oam_copy(oam_mem, obj_buffer, 1);	// update 1 sprite in obj_buffer
+	// starts at title 0, uses palette bank 0, 0 palettes before this one
+	u32 tid= 0 , pb= 0, poff = 0;
+	int px = 17, py = 0; // initial position
 
+	// copy data to oam buffer
+	memcpy(&tile_mem[4][tid], playerTiles, playerTilesLen); // copy sprite tiles
+    memcpy(pal_obj_mem+poff, playerPal, playerPalLen); // copy sprite pallets
+
+	// set object attributes
+	obj_set_attr(player,
+		ATTR0_4BPP, // 4 bytes per pixel
+		ATTR1_SIZE_32, // 32x32 pixel sprite
+		ATTR2_PALBANK(pb) | tid); // set palette bank and title id
+
+	obj_set_pos(player, px, py); // set position
+
+}
+
+void create_squirrel_sprite(){
+	// starts at title 66, uses palette bank 2, 32 palettes before this one
+	u32 tid= 66 , pb= 2, poff = 32;
+	int ax = 30, ay = 30; // initial position
+
+	// copy data to oam buffer
+	memcpy(&tile_mem[4][tid], squirrelTiles, squirrelTilesLen); // copy sprite tiles into local storage
+    memcpy(pal_obj_mem+poff, squirrelPal, squirrelPalLen); // copy sprite pallets
+
+	// set object attributes
+	obj_set_attr(squirrel,
+		ATTR0_4BPP, // 4 bytes per pixel
+		ATTR1_SIZE_16, // 16x16 pixel sprite
+		ATTR2_PALBANK(pb) | tid); // set palette bank and title id
+
+	obj_set_pos(squirrel, ax, ay); // set position
+}
+
+void create_apple_sprite(){
+	// starts at title 64, uses palette bank 1, 16 palettes before this one
+	u32 tid= 64 , pb= 1, poff = 16;
+	int ax = 0, ay = 0; // initial position
+
+	// copy data to oam buffer
+	memcpy(&tile_mem[4][tid], appleTiles, appleTilesLen); // copy sprite tiles into local storage
+    memcpy(pal_obj_mem+poff, applePal, applePalLen); // copy sprite pallets
+
+	// set object attributes
+	obj_set_attr(apple,
+		ATTR0_4BPP, // 4 bytes per pixel
+		ATTR1_SIZE_8, // 8x8 pixel sprite
+		ATTR2_PALBANK(pb) | tid); // set palette bank and title id
+
+	obj_set_pos(apple, ax, ay); // set position
 }
 
 
@@ -115,8 +165,12 @@ int main()
 {
 	oam_init(obj_buffer, 128); // initialize 128 sprites
 	REG_DISPCNT = DCNT_OBJ | DCNT_OBJ_1D; // Enable Objects & OBJ-VRAM as array
-	create_player_sprite(); // create player
-	input(); // get input
+	create_player_sprite(); // initialize player
+	create_apple_sprite(); // initialize apple
+	create_squirrel_sprite(); // initialize squirrel
+	oam_copy(oam_mem, obj_buffer, 3); // copy data from OAM buffer to real OAM
+
+	// input(); // get input
 	while(1);
 	return 0;
 }
