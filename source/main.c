@@ -19,13 +19,27 @@ OBJ_ATTR *apple = &obj_buffer[1]; // define the apple sprite
 OBJ_ATTR *squirrel = &obj_buffer[2]; // define the squirrel sprite
 
 int x= 96, y= 32; // default player position
+int apple_x = 0, apple_y = 0; // apple position
+bool apple_thrown = false;
 int frame=0; // frame count to slow polling
+
+void apple_move(){
+	// put apple behind player
+	apple_x = x+20;
+	apple_y = y+15;
+
+	obj_set_pos(apple, x+10, y+15); // set apple position
+	oam_copy(oam_mem, obj_buffer, 2); // update buffer
+	obj_unhide(apple, ATTR0_4BPP); // unhide apple
+	apple_thrown = true;
+}
 
 
 void player_throw(){
 	player->attr2 = PLAYER_FRAME3; // change to frame 3
 	oam_copy(oam_mem, obj_buffer, 1); // update sprite
 	// player->attr2 = PLAYER_FRAME4; // change to frame 1
+	apple_move(); // create an apple animation
 }
 
 void player_walk(){
@@ -40,7 +54,6 @@ void player_skid(){
 	player->attr2 = PLAYER_FRAME4; // change to frame 1
 }
 
-
 void input()
 {
 
@@ -51,6 +64,13 @@ void input()
         {
 			vid_vsync(); // wait for VBlank
 			key_poll(); // poll user input
+		}
+
+		// if apple thrown, move in
+		if(apple_thrown){
+			apple_x = (apple_x+PLAYER_SPEED+2) % (SCREEN_WIDTH);
+			obj_set_pos(apple, apple_x, apple_y);
+			oam_copy(oam_mem, obj_buffer, 2); // update buffer
 		}
 
 		// if press A
@@ -104,11 +124,9 @@ void input()
 	}
 }
 
-
 void create_player_sprite(){
 	// starts at title 0, uses palette bank 0, 0 palettes before this one
 	u32 tid= 0 , pb= 0, poff = 0;
-	int px = 17, py = 0; // initial position
 
 	// copy data to oam buffer
 	memcpy(&tile_mem[4][tid], playerTiles, playerTilesLen); // copy sprite tiles
@@ -120,32 +138,13 @@ void create_player_sprite(){
 		ATTR1_SIZE_32, // 32x32 pixel sprite
 		ATTR2_PALBANK(pb) | tid); // set palette bank and title id
 
-	obj_set_pos(player, px, py); // set position
+	obj_set_pos(player, x, y); // set position
 
-}
-
-void create_squirrel_sprite(){
-	// starts at title 66, uses palette bank 2, 32 palettes before this one
-	u32 tid= 66 , pb= 2, poff = 32;
-	int ax = 30, ay = 30; // initial position
-
-	// copy data to oam buffer
-	memcpy(&tile_mem[4][tid], squirrelTiles, squirrelTilesLen); // copy sprite tiles into local storage
-    memcpy(pal_obj_mem+poff, squirrelPal, squirrelPalLen); // copy sprite pallets
-
-	// set object attributes
-	obj_set_attr(squirrel,
-		ATTR0_4BPP, // 4 bytes per pixel
-		ATTR1_SIZE_16, // 16x16 pixel sprite
-		ATTR2_PALBANK(pb) | tid); // set palette bank and title id
-
-	obj_set_pos(squirrel, ax, ay); // set position
 }
 
 void create_apple_sprite(){
 	// starts at title 64, uses palette bank 1, 16 palettes before this one
 	u32 tid= 64 , pb= 1, poff = 16;
-	int ax = 0, ay = 0; // initial position
 
 	// copy data to oam buffer
 	memcpy(&tile_mem[4][tid], appleTiles, appleTilesLen); // copy sprite tiles into local storage
@@ -157,9 +156,26 @@ void create_apple_sprite(){
 		ATTR1_SIZE_8, // 8x8 pixel sprite
 		ATTR2_PALBANK(pb) | tid); // set palette bank and title id
 
-	obj_set_pos(apple, ax, ay); // set position
+	obj_set_pos(apple, x+10, y+15); // set position
 }
 
+void create_squirrel_sprite(){
+	// starts at title 66, uses palette bank 2, 32 palettes before this one
+	u32 tid= 66 , pb= 2, poff = 32;
+	int sx = 30, sy = 30; // initial position
+
+	// copy data to oam buffer
+	memcpy(&tile_mem[4][tid], squirrelTiles, squirrelTilesLen); // copy sprite tiles into local storage
+    memcpy(pal_obj_mem+poff, squirrelPal, squirrelPalLen); // copy sprite pallets
+
+	// set object attributes
+	obj_set_attr(squirrel,
+		ATTR0_4BPP, // 4 bytes per pixel
+		ATTR1_SIZE_16, // 16x16 pixel sprite
+		ATTR2_PALBANK(pb) | tid); // set palette bank and title id
+
+	obj_set_pos(squirrel, sx, sy); // set position
+}
 
 int main()
 {
@@ -168,9 +184,10 @@ int main()
 	create_player_sprite(); // initialize player
 	create_apple_sprite(); // initialize apple
 	create_squirrel_sprite(); // initialize squirrel
-	oam_copy(oam_mem, obj_buffer, 3); // copy data from OAM buffer to real OAM
+	obj_hide(apple); // hide the apple
+	oam_copy(oam_mem, obj_buffer, 2); // copy data from OAM buffer to real OAM
 
-	// input(); // get input
+	input(); // get input
 	while(1);
 	return 0;
 }
