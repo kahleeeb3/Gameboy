@@ -12,6 +12,8 @@
 #define PLAYER_FRAME3 32
 #define PLAYER_FRAME4 48
 
+int squirrel_frame = 0;
+
 
 OBJ_ATTR obj_buffer[128]; // allocate space for 128 sprites
 OBJ_ATTR *player= &obj_buffer[0]; // define the player sprite
@@ -66,6 +68,12 @@ void input()
 			key_poll(); // poll user input
 		}
 
+		// move squirrel
+		// 66, 74, 82, 90
+		squirrel->attr2 = ATTR2_PALBANK(2) | (66 + 4*squirrel_frame);
+		squirrel_frame = (squirrel_frame+1)%4;
+		// squirrel->attr2 = ((squirrel->attr2 + 8) % 32);
+
 		// if apple thrown, move in
 		if(apple_thrown){
 			apple_x = (apple_x+PLAYER_SPEED+2) % (SCREEN_WIDTH);
@@ -119,7 +127,7 @@ void input()
 			}
 
 		obj_set_pos(player, x, y); // set player position
-		oam_copy(oam_mem, obj_buffer, 1);	// update 1 sprite in obj_buffer
+		oam_copy(oam_mem, obj_buffer, 3);	// update 1 sprite in obj_buffer
 
 	}
 }
@@ -185,7 +193,7 @@ int main()
 	create_apple_sprite(); // initialize apple
 	create_squirrel_sprite(); // initialize squirrel
 	obj_hide(apple); // hide the apple
-	oam_copy(oam_mem, obj_buffer, 2); // copy data from OAM buffer to real OAM
+	oam_copy(oam_mem, obj_buffer, 3); // copy data from OAM buffer to real OAM
 
 	input(); // get input
 	while(1);
