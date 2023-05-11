@@ -8,24 +8,9 @@
 #include "squirrel.h"
 #include "input.h"
 
-#define MAX_APPLES 5
-#define APPLE_SPEED 7
-
 OBJ_ATTR obj_buffer[128]; // allocate space for 128 sprites
-
-int max_num_apples = 5;
-int curr_apple_count = 0;
-
-typedef struct{
-	OBJ_ATTR *mem_location;
-	int thrown;
-	int x_pos;
-	int y_pos;
-	int direction;
-	int index;
-} Apple;
-
-Apple* apples_thrown[5];
+Apple* apples_thrown[MAX_APPLES];
+Squirrel* squirrels[MAX_SQUIRRELS];
 
 
 // GBA Memory Functions
@@ -110,6 +95,39 @@ void play(SpriteStruct *player)
 				this_apple->x_pos = (this_apple->x_pos + (this_apple->direction * APPLE_SPEED) );
 				obj_set_pos(this_apple->mem_location, this_apple->x_pos, this_apple->y_pos); // set position
 
+				// for each squirrel on screen
+				for( int i = 0; i<MAX_SQUIRRELS; i++){
+					Squirrel *this_squirrel = squirrels[i];
+
+					// find center of apple
+					int Ax = this_apple->x_pos + 5;
+					int Ay = this_apple->y_pos + 5;
+					
+					// find center of the squirrel
+					int Sx = this_squirrel->x_pos + 8;
+					int Sy = this_squirrel->y_pos + 10;
+					int hb = SQUIRREL_HIT_BOX; // hit box size 
+
+					// if within x range
+					if( (Ax >= (Sx-hb) ) && (Ax <= (Sx+hb) ) ) 
+					{
+						// if within y range
+						if( (Ay >= (Sy-hb) ) && (Ay <= (Sy+hb) ) ) {
+
+							// remove apple
+							obj_set_pos(this_apple->mem_location, 0 + (this_apple->index *8), 0); // set to 0,0
+							this_apple->thrown = 0; // set as not thrown
+
+							// remove squirrel
+							obj_hide(this_squirrel->mem_location);
+
+						}
+					}
+
+				}
+
+				
+				// if the apple is off the screen
 				if( (this_apple->x_pos > SCREEN_WIDTH) || (this_apple->x_pos < 0) ){
 					// murder that apple
 					obj_set_pos(this_apple->mem_location, 0 + (this_apple->index *8), 0); // set to 0,0
@@ -118,7 +136,7 @@ void play(SpriteStruct *player)
 				}
 			}
 		}
-		oam_copy(oam_mem, obj_buffer, 1+MAX_APPLES); // update objects
+		oam_copy(oam_mem, obj_buffer, 1+MAX_APPLES+MAX_SQUIRRELS); // update objects
 
 	}
 }
@@ -134,8 +152,8 @@ int main()
 	copy_tiles(appleTiles, 64, appleTilesLen); // copy tile data to mem
 	copy_palette(applePal, 16, applePalLen); // copy palette dat to mem
 
-	// copy_tiles(squirrelTiles, 66, squirrelTilesLen); // copy tile data to mem
-	// copy_palette(squirrelPal, 32, squirrelPalLen); // copy palette dat to mem
+	copy_tiles(squirrelTiles, 66, squirrelTilesLen); // copy tile data to mem
+	copy_palette(squirrelPal, 32, squirrelPalLen); // copy palette dat to mem
 	
 	SpriteStruct *player = init_sprite(0, 32, 4, 0, 0, 100, 50);
 
@@ -146,7 +164,7 @@ int main()
 
 		// add to thrown apple list
 		Apple *newApple = (Apple *)malloc(sizeof(Apple)); // create new apple struct
-		newApple->mem_location = &obj_buffer[i+ 1]; // set memory location
+		newApple->mem_location = &obj_buffer[1+ i]; // set memory location
 		newApple->index = i; // set position in apple thrown list
 		newApple->thrown = 0; // set as not thrown yet
 		apples_thrown[i] = newApple; // add to list of thrown apples
@@ -155,9 +173,25 @@ int main()
 		// obj_hide(newApple->mem_location);
 	}
 
-	// SpriteStruct *squirrel = init_sprite(2, 16, 4, 66, 2, 50, 50);
+	// fill sprite slots (1+MAX_APPLES) through MAX_SQUIRRELS with squirrel sprites
+	for(int i = 0; i < MAX_SQUIRRELS; i++){
 
-	oam_copy(oam_mem, obj_buffer, 1+MAX_APPLES); // copy data from OAM buffer to real OAM
+		int x = 20;
+		int y = 16 + (i*16);
+
+		// create new squirrel sprite
+		init_sprite(1 + MAX_APPLES + i, 16, 4, 66, 2, x, y);
+
+		Squirrel *newSquirrel = (Squirrel *) malloc(sizeof(Squirrel));
+		newSquirrel->mem_location = &obj_buffer[1 + MAX_APPLES + i];
+		newSquirrel->x_pos = x;
+		newSquirrel->y_pos = y;
+		newSquirrel->index = i;
+		newSquirrel->hit = 0;
+		squirrels[i] = newSquirrel;
+	}
+
+	oam_copy(oam_mem, obj_buffer, 1+MAX_APPLES+MAX_SQUIRRELS); // copy data from OAM buffer to real OAM
 
 	play(player); // run the game
 
