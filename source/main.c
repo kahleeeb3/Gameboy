@@ -66,6 +66,7 @@ void play(SpriteStruct *player)
 
 		// get the user input
 		int action = input(player, obj_buffer); // update player input
+
 		// iterate over apples thrown
 		for (int i = 0; i < MAX_APPLES; i++)
 		{
@@ -119,6 +120,7 @@ void play(SpriteStruct *player)
 							this_apple->thrown = 0; // set as not thrown
 
 							// remove squirrel
+							this_squirrel->hit = 1;
 							obj_hide(this_squirrel->mem_location);
 
 						}
@@ -136,8 +138,75 @@ void play(SpriteStruct *player)
 				}
 			}
 		}
-		oam_copy(oam_mem, obj_buffer, 1+MAX_APPLES+MAX_SQUIRRELS); // update objects
+		
+		// move all squirrels
+		for (int i = 0; i <MAX_SQUIRRELS; i++)
+		{
+			Squirrel *this_squirrel = squirrels[i];
 
+			if(this_squirrel->hit != 1){
+
+				// squirrel center
+				int Sx = this_squirrel->x_pos + 8;
+				int Sy = this_squirrel->y_pos + 10;
+				
+				// player center
+				int Px = player->x_pos + 15;
+				int Py = player->y_pos + 14;
+				int dx =  Px - Sx;
+				int dy = Py - Sy;
+
+				// determine direction
+				int x_dir = 1; // pos or neg 1
+				int y_dir = 1; // pos or neg 1
+				if(dx < 0)
+					x_dir = -1;
+				if(dy < 0)
+					y_dir = -1;
+
+				// determine angle
+				int x_ratio;
+				int y_ratio;
+				u16 angle = (x_dir*dx)/(y_dir*dy);
+
+				if(angle > 1.25) // x>>y
+				{
+					x_ratio = 1;
+					y_ratio = 0;
+				}
+				if(angle < 0.75) // y >> x
+				{
+					x_ratio = 0;
+					y_ratio = 1;
+				}
+				else if((angle >= 0.75) && (angle <= 1.25)) // x >> y
+				{
+					x_ratio = 1;
+					y_ratio = 1;
+				}
+
+				this_squirrel->x_pos += x_dir * x_ratio;
+				this_squirrel->y_pos += y_dir * y_ratio;
+
+				// if squirrel is in hit box, kill squirrel
+				int hb = 8;
+				if ((Sx >= (Px - hb)) && (Sx <= (Px + hb)))
+				{
+					// if within y range
+					if ((Sy >= (Py - hb)) && (Sy <= (Py + hb)))
+					{
+						// remove squirrel
+						obj_hide(this_squirrel->mem_location);
+						this_squirrel->hit = 1;
+					}
+				}
+
+				obj_set_pos(this_squirrel->mem_location, this_squirrel->x_pos, this_squirrel->y_pos);
+
+			}
+			
+		}
+		oam_copy(oam_mem, obj_buffer, 1+MAX_APPLES+MAX_SQUIRRELS); // update all objects
 	}
 }
 

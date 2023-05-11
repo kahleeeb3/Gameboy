@@ -5,8 +5,8 @@
 #define MAX_APPLES 5
 #define APPLE_SPEED 7
 
-#define MAX_SQUIRRELS 5
-#define SQUIRREL_SPEED 5
+#define MAX_SQUIRRELS 8
+#define SQUIRREL_SPEED 1
 #define SQUIRREL_HIT_BOX 4
 
 #define PLAYER_FRAME1 0
