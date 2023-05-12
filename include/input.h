@@ -5,7 +5,7 @@
 #define MAX_APPLES 5
 #define APPLE_SPEED 7
 
-#define MAX_SQUIRRELS 8
+#define MAX_SQUIRRELS 1
 #define SQUIRREL_SPEED 1
 #define SQUIRREL_HIT_BOX 4
 
@@ -41,12 +41,14 @@ typedef struct{
 
 typedef struct{
 	OBJ_ATTR *mem_location; // location in object mem
+	int curr_frame; // which frame the sprite is on
 	int hit; // if the squirrel has been hit
 	int x_pos; // x location
 	int y_pos; // y location
-	int x_dir; // x direction headed
-	int y_dir; // y direction headed
+	int dir_facing; // which direction is it facing
 	int index; // which squirrel in the list
 } Squirrel;
 
 int input(SpriteStruct *player, OBJ_ATTR *obj_buffer);
+
+void walk(SpriteStruct *sprite, int end_frame);

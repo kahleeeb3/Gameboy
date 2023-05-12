@@ -81,6 +81,5 @@ int input(SpriteStruct *player, OBJ_ATTR *obj_buffer){
     // update player animation
     obj_set_pos(player->mem_location, player->x_pos, player->y_pos);
 
-    oam_copy(oam_mem, obj_buffer, 1);
     return 0;
 }

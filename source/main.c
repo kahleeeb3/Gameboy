@@ -9,21 +9,22 @@
 #include "input.h"
 
 OBJ_ATTR obj_buffer[128]; // allocate space for 128 sprites
-Apple* apples_thrown[MAX_APPLES];
+Apple* apples[MAX_APPLES];
 Squirrel* squirrels[MAX_SQUIRRELS];
 
 
-// GBA Memory Functions
-void copy_tiles(const unsigned int *tileSet, int tileSetStart, int tileSetLen){
+void copy_tiles(const unsigned int *tileSet, int tileSetStart, int tileSetLen)
+{
 	memcpy(&tile_mem[4][tileSetStart], tileSet, tileSetLen);
 }
 
-void copy_palette(const unsigned int *palSet, int palSetStart, int palSetLen){
+void copy_palette(const unsigned int *palSet, int palSetStart, int palSetLen)
+{
 	memcpy(pal_obj_mem+palSetStart, palSet, palSetLen);
 }
 
-// init sprite struct for player
-SpriteStruct *init_sprite(int sprite_num, int size, int max_frame, int tile_id, int pal_bank, int x, int y){
+SpriteStruct *init_sprite(int sprite_num, int size, int max_frame, int tile_id, int pal_bank, int x, int y)
+{
 	// allocate space for sprite struct
 	SpriteStruct *newSprite = (SpriteStruct *)malloc(sizeof(SpriteStruct));
 
@@ -52,6 +53,156 @@ SpriteStruct *init_sprite(int sprite_num, int size, int max_frame, int tile_id, 
 	return newSprite;
 }
 
+void throw_apple(SpriteStruct *player, Apple *apple)
+{
+	apple->thrown = 1; // indicate it's been thrown
+	apple->x_pos = player->x_pos + 20; // new x pos
+	apple->y_pos = player->y_pos + 15; // new y pos
+	apple->direction = player->dir_facing; // apple direction
+	obj_set_pos(apple->mem_location, apple->x_pos, apple->y_pos); // set position
+	// obj_unhide(this_apple->mem_location, ATTR0_REG); // unhide the apple
+}
+
+void move_apple(Apple *apple)
+{
+	apple->x_pos = (apple->x_pos + (apple->direction * APPLE_SPEED) ); // update x position
+	obj_set_pos(apple->mem_location, apple->x_pos, apple->y_pos); // set position
+}
+
+void kill_squirrel(Squirrel *squirrel)
+{
+	obj_hide(squirrel->mem_location);
+	squirrel->hit = 1;
+}
+
+void check_hit_by_apple(Squirrel *squirrel, Apple *apple)
+{
+	// find center of apple
+	int Ax = apple->x_pos + 5;
+	int Ay = apple->y_pos + 5;
+	
+	// find center of the squirrel
+	int Sx = squirrel->x_pos + 8;
+	int Sy = squirrel->y_pos + 10;
+	int hb = SQUIRREL_HIT_BOX; // hit box size 
+
+	// if within x range
+	if( (Ax >= (Sx-hb) ) && (Ax <= (Sx+hb) ) ) 
+	{
+		// if within y range
+		if( (Ay >= (Sy-hb) ) && (Ay <= (Sy+hb) ) )
+		{
+			// remove apple
+			obj_set_pos(apple->mem_location, 0 + (apple->index *8), 0); // set to 0,0
+			apple->thrown = 0; // set as not thrown
+
+			// remove squirrel
+			kill_squirrel(squirrel);
+
+		}
+	}
+}
+
+void move_squirrel_towards_player(Squirrel *squirrel, SpriteStruct *player)
+{
+	// find squirrel center
+	int Sx = squirrel->x_pos + 8;
+	int Sy = squirrel->y_pos + 10;
+	
+	// find player center
+	int Px = player->x_pos + 15;
+	int Py = player->y_pos + 14;
+
+	// find x and y distance between them
+	int dx = Px - Sx;
+	int dy = Py - Sy;
+
+	// determine direction to move
+	int x_dir = 1; // pos or neg 1
+	int y_dir = 1; // pos or neg 1
+	if(dx < 0)
+		x_dir = -1;
+	if(dy < 0)
+		y_dir = -1;
+
+	/* 
+	 * Deciding how much to move in the x-direction and y-direction:
+	 * Ideally, this would be done by finding the ratio between the distance needed to travel in each direction 
+	 * and the hypotenuse of the right triangle created by the player and squirrel. However, we can only
+	 * move in integer quantities of pixels. And in situations of Sufficiently small angles, we get a
+	 * divide by zero error. So instead we will take the ratio between the x distance needed to travel and the
+	 * y distance needed to travel. If that ratio is large, we should move solely in the x direction.
+	 * If that angle is small, we should move in the y direction. If its roughly 1, we should move in both directions.
+	 */
+
+	int move_x;
+	int move_y;
+	u16 ratio = (x_dir*dx)/(y_dir*dy);
+
+	if(ratio > 1.25) // x>>y
+	{
+		move_x = 1;
+		move_y = 0;
+	}
+	if(ratio < 0.75) // y >> x
+	{
+		move_x = 0;
+		move_y = 1;
+	}
+	else if((ratio >= 0.75) && (ratio <= 1.25)) // x >> y
+	{
+		move_x = 1;
+		move_y = 1;
+	}
+
+	squirrel->x_pos += x_dir * move_x; // update x location
+	squirrel->y_pos += y_dir * move_y; // update y location
+	obj_set_pos(squirrel->mem_location, squirrel->x_pos, squirrel->y_pos);
+
+	// if headed right but facing left
+	if(x_dir == 1 && squirrel->dir_facing == -1)
+	{
+		squirrel->mem_location->attr1 ^= ATTR1_HFLIP;
+		squirrel->dir_facing = 1;
+	}
+	// headed left but facing right
+	else if(x_dir == -1 && squirrel->dir_facing == 1)
+	{
+		squirrel->mem_location->attr1 ^= ATTR1_HFLIP;
+		squirrel->dir_facing = -1;
+	}
+
+
+	// if squirrel is in hit box, kill squirrel
+	int hb = 8;
+	if ((Sx >= (Px - hb)) && (Sx <= (Px + hb)))
+	{
+		// if within y range
+		if ((Sy >= (Py - hb)) && (Sy <= (Py + hb)))
+		{
+			// remove squirrel
+			kill_squirrel(squirrel);
+		}
+	}
+
+}
+
+void squirrel_walk(Squirrel *squirrel){
+	int start_tile = 66;
+	int end_frame = 4;
+	int size = 16;
+	int pal_bank = 2;
+	int curr_frame = squirrel->curr_frame;
+	int tpf = (size*size)/(8*8); // number of tiles that make up a single frame
+
+	// update attribute 2
+	squirrel->mem_location->attr2 = ATTR2_PALBANK(pal_bank) | (start_tile + (tpf * curr_frame));
+	curr_frame = (curr_frame + 1) % end_frame;
+
+	//update curr_frame
+	squirrel->curr_frame = curr_frame;
+}
+
 void play(SpriteStruct *player)
 {
 	while (1)
@@ -63,15 +214,14 @@ void play(SpriteStruct *player)
 			key_poll();	 // poll which keys are activated
 		}
 
-
 		// get the user input
 		int action = input(player, obj_buffer); // update player input
 
-		// iterate over apples thrown
+		// for each apple
 		for (int i = 0; i < MAX_APPLES; i++)
 		{
 			// define selected apple
-			Apple *this_apple = apples_thrown[i];
+			Apple *this_apple = apples[i];
 
 			// if this apple hasn't been thrown
 			if (this_apple->thrown == 0)
@@ -79,12 +229,8 @@ void play(SpriteStruct *player)
 				// and player wants to throw
 				if (action == 1)
 				{
-					this_apple->thrown = 1; // indicate it's been thrown
-					this_apple->x_pos = player->x_pos + 20; // new x pos
-					this_apple->y_pos = player->y_pos + 15; // new y pos
-					this_apple->direction = player->dir_facing; // apple direction
-					obj_set_pos(this_apple->mem_location, this_apple->x_pos, this_apple->y_pos); // set position
-					// obj_unhide(this_apple->mem_location, ATTR0_REG); // unhide the apple
+					// throw the apple
+					throw_apple(player, this_apple);
 					break;
 				}
 			}
@@ -92,38 +238,21 @@ void play(SpriteStruct *player)
 			// if this apple has already been thrown
 			else
 			{
-				// update x position
-				this_apple->x_pos = (this_apple->x_pos + (this_apple->direction * APPLE_SPEED) );
-				obj_set_pos(this_apple->mem_location, this_apple->x_pos, this_apple->y_pos); // set position
+				// move the apple
+				move_apple(this_apple);
 
-				// for each squirrel on screen
+				// for each squirrel
 				for( int i = 0; i<MAX_SQUIRRELS; i++){
+
+					// define the selected squirrel
 					Squirrel *this_squirrel = squirrels[i];
 
-					// find center of apple
-					int Ax = this_apple->x_pos + 5;
-					int Ay = this_apple->y_pos + 5;
-					
-					// find center of the squirrel
-					int Sx = this_squirrel->x_pos + 8;
-					int Sy = this_squirrel->y_pos + 10;
-					int hb = SQUIRREL_HIT_BOX; // hit box size 
+					// if squirrel has not been hit
+					if( this_squirrel->hit == 0){
+						
+						// check if the squirrel is hit by an apple
+						check_hit_by_apple(this_squirrel, this_apple);
 
-					// if within x range
-					if( (Ax >= (Sx-hb) ) && (Ax <= (Sx+hb) ) ) 
-					{
-						// if within y range
-						if( (Ay >= (Sy-hb) ) && (Ay <= (Sy+hb) ) ) {
-
-							// remove apple
-							obj_set_pos(this_apple->mem_location, 0 + (this_apple->index *8), 0); // set to 0,0
-							this_apple->thrown = 0; // set as not thrown
-
-							// remove squirrel
-							this_squirrel->hit = 1;
-							obj_hide(this_squirrel->mem_location);
-
-						}
 					}
 
 				}
@@ -137,76 +266,28 @@ void play(SpriteStruct *player)
 					// obj_hide(this_apple->mem_location); // hide the sprite
 				}
 			}
-		}
 		
-		// move all squirrels
-		for (int i = 0; i <MAX_SQUIRRELS; i++)
-		{
+		}
+
+		// for each squirrel
+		for( int i = 0; i<MAX_SQUIRRELS; i++){
+
+			// define the selected squirrel
 			Squirrel *this_squirrel = squirrels[i];
 
-			if(this_squirrel->hit != 1){
+			// if squirrel has not been hit
+			if( this_squirrel->hit == 0){
 
-				// squirrel center
-				int Sx = this_squirrel->x_pos + 8;
-				int Sy = this_squirrel->y_pos + 10;
-				
-				// player center
-				int Px = player->x_pos + 15;
-				int Py = player->y_pos + 14;
-				int dx =  Px - Sx;
-				int dy = Py - Sy;
-
-				// determine direction
-				int x_dir = 1; // pos or neg 1
-				int y_dir = 1; // pos or neg 1
-				if(dx < 0)
-					x_dir = -1;
-				if(dy < 0)
-					y_dir = -1;
-
-				// determine angle
-				int x_ratio;
-				int y_ratio;
-				u16 angle = (x_dir*dx)/(y_dir*dy);
-
-				if(angle > 1.25) // x>>y
-				{
-					x_ratio = 1;
-					y_ratio = 0;
-				}
-				if(angle < 0.75) // y >> x
-				{
-					x_ratio = 0;
-					y_ratio = 1;
-				}
-				else if((angle >= 0.75) && (angle <= 1.25)) // x >> y
-				{
-					x_ratio = 1;
-					y_ratio = 1;
-				}
-
-				this_squirrel->x_pos += x_dir * x_ratio;
-				this_squirrel->y_pos += y_dir * y_ratio;
-
-				// if squirrel is in hit box, kill squirrel
-				int hb = 8;
-				if ((Sx >= (Px - hb)) && (Sx <= (Px + hb)))
-				{
-					// if within y range
-					if ((Sy >= (Py - hb)) && (Sy <= (Py + hb)))
-					{
-						// remove squirrel
-						obj_hide(this_squirrel->mem_location);
-						this_squirrel->hit = 1;
-					}
-				}
-
-				obj_set_pos(this_squirrel->mem_location, this_squirrel->x_pos, this_squirrel->y_pos);
+				// move the squirrel towards player
+				move_squirrel_towards_player(this_squirrel, player);
+				squirrel_walk(this_squirrel);
 
 			}
-			
+
 		}
+		
 		oam_copy(oam_mem, obj_buffer, 1+MAX_APPLES+MAX_SQUIRRELS); // update all objects
+
 	}
 }
 
@@ -236,7 +317,7 @@ int main()
 		newApple->mem_location = &obj_buffer[1+ i]; // set memory location
 		newApple->index = i; // set position in apple thrown list
 		newApple->thrown = 0; // set as not thrown yet
-		apples_thrown[i] = newApple; // add to list of thrown apples
+		apples[i] = newApple; // add to list of thrown apples
 
 		// hide the apple
 		// obj_hide(newApple->mem_location);
@@ -257,6 +338,8 @@ int main()
 		newSquirrel->y_pos = y;
 		newSquirrel->index = i;
 		newSquirrel->hit = 0;
+		newSquirrel->curr_frame = 1;
+		newSquirrel->dir_facing = -1;
 		squirrels[i] = newSquirrel;
 	}
 
