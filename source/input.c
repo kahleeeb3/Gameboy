@@ -228,29 +228,39 @@ int move_player(Sprite *player)
         return 1; // let play function know throw took place
     }
 
-    // update player position based on key input
-    player->x_pos += PLAYER_SPEED*key_tri_horz();
-    player->y_pos += PLAYER_SPEED*key_tri_vert();
     
-    // if left key held
-    if(key_held(KEY_LEFT))
+    // if directional key is pressed
+    if(key_tri_horz() || key_tri_vert())
     {
-        // if player facing right
-        if(player->dir_facing == 1)
-            player_skid_animation(player); // player skid animation
-        else
-            walk_animation(player, 2); // player skid animation
-    }
+        // update player position based on key input
+        player->x_pos += PLAYER_SPEED*key_tri_horz();
+        player->y_pos += PLAYER_SPEED*key_tri_vert();
 
-    // if right key held
-    if(key_held(KEY_RIGHT))
-    {
-        // if player facing left
-        if(player->dir_facing == -1)
-            player_skid_animation(player); // player skid animation
+        // if left key held and player facing right
+        if(key_held(KEY_LEFT) && (player->dir_facing == 1))
+        {
+                player_skid_animation(player); // player skid animation
+        }
+
+        // if right key held and player facing left
+        else if(key_held(KEY_RIGHT) && (player->dir_facing == -1) )
+        {
+                player_skid_animation(player); // player skid animation
+        }
+
+        // if player is just walking
         else
-            walk_animation(player, 2); // player skid animation
+        {
+            walk_animation(player, 2); // player walk animation
+        }
+
+        
+
+
+
     }
+    
+    
 
     // update player animation
     obj_set_pos(player->mem_addr, player->x_pos, player->y_pos);
