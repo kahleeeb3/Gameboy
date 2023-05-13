@@ -207,7 +207,6 @@ void player_throw_animation(Sprite *player)
     player->mem_addr->attr2 = PLAYER_FRAME3; // change to frame 3
 }
 
-
 int move_player(Sprite *player)
 {
 

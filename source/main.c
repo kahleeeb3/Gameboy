@@ -23,6 +23,29 @@ void copy_palette(const unsigned int *palSet, int palSetStart, int palSetLen)
 	memcpy(pal_obj_mem+palSetStart, palSet, palSetLen);
 }
 
+void text_box_init(int x, int y, int width, int height)
+{
+	irq_init(NULL); // Initialize the interrupt system with no callback function
+    irq_add(II_VBLANK, NULL); // Add a VBLANK interrupt with no callback function
+
+	// Initialize the TTE library for displaying text in mode 4 (4bpp) with
+    // 16x16 character cells using the Verdana 9 font with shading
+	 tte_init_chr4c(
+        0,                              // BG number.
+        BG_CBB(0) | BG_SBB(10),         // BG control.
+        0xF000,                         // Screen-entry base
+        bytes2word(13, 15, 0, 0),       // Color attributes.
+        CLR_WHITE,                      // Ink color
+        &verdana9_b4Font,               // Verdana 9, with shade.
+        (fnDrawg)chr4c_drawg_b4cts_fast // b4cts renderer, asm version
+    );
+
+	tte_init_con(); // Initialize the console I/O for text output
+
+    tte_set_margins(x, y, width, height);
+
+}
+
 Sprite *init_sprite(int sprite_num, int size, int tile_id, int pal_bank, int active, int x, int y)
 {
 	// allocate space for sprite struct
@@ -65,6 +88,9 @@ void play()
 {
 	while (1)
 	{
+		VBlankIntrWait(); // Wait for the VBLANK interrupt
+		tte_printf("#{es;P}Score:\nSquirrels:");
+
 		// slow frame rate
 		for (int i = 0; i < 4; i++)
 		{
@@ -149,7 +175,8 @@ void play()
 int main()
 {
 	oam_init(obj_buffer, 128); // initialize 128 sprites
-	REG_DISPCNT = DCNT_OBJ | DCNT_OBJ_1D; // Enable Objects & OBJ-VRAM as array
+	text_box_init(2, 0, 50, 50); // initialize text box
+	REG_DISPCNT = DCNT_MODE0 | DCNT_BG0 | DCNT_OBJ | DCNT_OBJ_1D; // Enable Objects & OBJ-VRAM as array
 
 	// copy tile data to memory
 	copy_tiles(playerTiles, PLAYER_FRAME1, playerTilesLen); // player tiles
@@ -169,8 +196,8 @@ int main()
 	for(int i = 0; i < APPLE_MAX; i++){
 
 		int sprite_num = 1 + i;
-		int y = 0; // all apples at top of screen
 		int x = i*8; // space them apart by 8 pixels
+		int y = 24;
 
 		// create new apple sprite
 		Sprite *newApple = init_sprite(sprite_num, APPLE_SIZE, APPLE_FRAME1, APPLE_PAL_BANK, 1, x, y);
