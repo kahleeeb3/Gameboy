@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <tonc.h>
 #include "player.h"
@@ -13,6 +14,9 @@ Sprite *player; // global pointer to the player sprite
 Sprite* apples[APPLE_MAX]; // array of apple sprite pointers
 Sprite* squirrels[APPLE_MAX]; // array of squirrel sprite pointers
 
+int player_score = 0;
+int squirrel_count = 0;
+
 void copy_tiles(const unsigned int *tileSet, int tileSetStart, int tileSetLen)
 {
 	memcpy(&tile_mem[4][tileSetStart], tileSet, tileSetLen);
@@ -23,7 +27,7 @@ void copy_palette(const unsigned int *palSet, int palSetStart, int palSetLen)
 	memcpy(pal_obj_mem+palSetStart, palSet, palSetLen);
 }
 
-void text_box_init(int x, int y, int width, int height)
+void text_init()
 {
 	irq_init(NULL); // Initialize the interrupt system with no callback function
     irq_add(II_VBLANK, NULL); // Add a VBLANK interrupt with no callback function
@@ -41,10 +45,20 @@ void text_box_init(int x, int y, int width, int height)
     );
 
 	tte_init_con(); // Initialize the console I/O for text output
-
-    tte_set_margins(x, y, width, height);
-
 }
+
+
+void squirrel_spawn(){
+	Sprite *squirrel = squirrels[squirrel_count];
+	int x = rand() % (SCREEN_WIDTH + 1);
+	int y = rand() % (SCREEN_HEIGHT + 1);
+	squirrel->x_pos = x;
+	squirrel->y_pos = y;
+	obj_set_pos(squirrel->mem_addr, x, y);
+	obj_unhide(squirrel->mem_addr, ATTR0_4BPP);
+	squirrel->active = 1;
+}
+
 
 Sprite *init_sprite(int sprite_num, int size, int tile_id, int pal_bank, int active, int x, int y)
 {
@@ -86,16 +100,66 @@ Sprite *init_sprite(int sprite_num, int size, int tile_id, int pal_bank, int act
 
 void play()
 {
+	
+	srand(time(NULL)); // seed random number generator
+	text_init(); // initialize text placement
+	
+	// Overflow every ~1 second:
+    // 0x4000 ticks @ FREQ_1024
+    REG_TM2D = -0x4000;          // 0x4000 ticks till overflow
+    REG_TM2CNT = TM_FREQ_1024;   // we're using the 1024 cycle timer
+
+    REG_TM2CNT |= TM_ENABLE;
+    REG_TM3CNT = TM_ENABLE | TM_CASCADE;
+
+    u32 sec = -1;
+
+	// track the round data
+	int round_number = 1;
+	int squirrels_spawned_in_round = 0;
+
 	while (1)
 	{
-		VBlankIntrWait(); // Wait for the VBLANK interrupt
-		tte_printf("#{es;P}Score:\nSquirrels:");
+
+        // Wait for the VBLANK interrupt
+        VBlankIntrWait();
+
+        // Check if the current time has changed
+        if (REG_TM3D != sec)
+        {
+            // Update the stored time
+            sec = REG_TM3D;
+
+            // Convert the time to hours, minutes, and seconds
+            // u32 hours = sec / 3600;
+            u32 minutes = (sec % 3600) / 60;
+            u32 seconds = sec % 60;
+
+            tte_printf("#{es;P:0,0}");
+			tte_printf("#{P:2,0}Score: %d", player_score);
+			tte_printf("#{P:2,12}Squirrels: %d", squirrel_count);
+			tte_printf("#{P:210,0}%02d:%02d", minutes, seconds);
+        }
 
 		// slow frame rate
 		for (int i = 0; i < 4; i++)
 		{
 			vid_vsync(); // wait for VBlank
 			key_poll();	 // poll which keys are activated
+		}
+
+		// spawn some squirrels
+		if( squirrels_spawned_in_round < SQUIRREL_MAX)
+		{
+			squirrel_spawn();
+			squirrels_spawned_in_round++;
+			squirrel_count++;
+		}
+		// if there are no more squirrels, start a new round
+		if( (squirrel_count == 0) && (squirrels_spawned_in_round == SQUIRREL_MAX) )
+		{
+			round_number++;
+			squirrels_spawned_in_round = 0;
 		}
 
 		// move the player sprite
@@ -140,9 +204,12 @@ void play()
 					if( squirrel->active == 1){
 
 						// if apple hit squirrel
-						if(collision(apple, squirrel, SQUIRREL_HIT_BOX) == 1){
+						if(collision(apple, squirrel, SQUIRREL_HIT_BOX) == 1)
+						{
 							apple_kill_animation(apple); // remove apple
 							squirrel_kill_animation(squirrel); // remove squirrel
+							squirrel_count--;
+							player_score++;
 						}
 					}
 				}
@@ -163,8 +230,40 @@ void play()
 
 				// move towards player
 				squirrel_move_towards(squirrel, player);
+				
+				// if squirrel hit the player
+				if(collision(squirrel, player , PLAYER_HIT_BOX) == 1)
+				{
+					// remove squirrel
+					squirrel_kill_animation(squirrel);
+					player_score--;
+					squirrel_count--;
+				}
 
 			}
+		}
+		
+		
+		if(player_score<0)
+		{
+			REG_DISPCNT = DCNT_MODE0 | DCNT_BG0; // Disable Objects & OBJ-VRAM as array
+			tte_printf("#{es;P:84,50}GAME OVER");
+			tte_printf("#{P:65,62}You Survived %d Round", round_number);
+			tte_printf("#{P:67,86}press A to try again.");
+			key_wait_till_hit(KEY_A);
+
+			// reset scores
+			player_score = 0;
+			squirrel_count = 0;
+			round_number = 1;
+			squirrels_spawned_in_round = 0;
+
+			// kill remaining squirrels
+			for( int i = 0; i < SQUIRREL_MAX; i++)
+				if(squirrels[i]->active == 1)
+					squirrel_kill_animation(squirrels[i]);
+
+			REG_DISPCNT = DCNT_MODE0 | DCNT_BG0 | DCNT_OBJ | DCNT_OBJ_1D;
 		}
 		
 		oam_copy(oam_mem, obj_buffer, 1 + APPLE_MAX + SQUIRREL_MAX);
@@ -175,7 +274,6 @@ void play()
 int main()
 {
 	oam_init(obj_buffer, 128); // initialize 128 sprites
-	text_box_init(2, 0, 50, 50); // initialize text box
 	REG_DISPCNT = DCNT_MODE0 | DCNT_BG0 | DCNT_OBJ | DCNT_OBJ_1D; // Enable Objects & OBJ-VRAM as array
 
 	// copy tile data to memory
@@ -196,7 +294,7 @@ int main()
 	for(int i = 0; i < APPLE_MAX; i++){
 
 		int sprite_num = 1 + i;
-		int x = i*8; // space them apart by 8 pixels
+		int x = 2 + (i*8); // space them apart by 8 pixels
 		int y = 24;
 
 		// create new apple sprite
@@ -211,19 +309,22 @@ int main()
 
 		int sprite_num = 1 + APPLE_MAX + i;
 		int x = 20;
-		int y = 16 + (i*16);
+		int y = 24 + 8 + (i*16);
 
 		// create new squirrel sprite
 		Sprite *newSquirrel = init_sprite(sprite_num, SQUIRREL_SIZE, SQUIRREL_FRAME1, SQUIRREL_PAL_BANK, 0, x, y);
-		newSquirrel->active = 1; // this is how you mark the squirrels as active
 		newSquirrel->index = i; // set the index of the squirrel
 		newSquirrel->dir_facing = -1; // the sprites were drawn facing the wrong direction. May fix later.
+		newSquirrel->active = 0; // set as not active (has been hit)
 		squirrels[i] = newSquirrel; // add to list of squirrels
+		obj_hide(newSquirrel->mem_addr); // hide the sprite
 	}
 
 	oam_copy(oam_mem, obj_buffer, 1 + APPLE_MAX + SQUIRREL_MAX); // copy data from OAM buffer to real OAM
 
 	play();
+
+	while(1);
 	
 	return 0;
 }

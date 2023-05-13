@@ -95,7 +95,7 @@ void apple_throw_init(Sprite *apple, Sprite *player)
 
 void apple_kill_animation(Sprite *apple)
 {
-    obj_set_pos(apple->mem_addr, apple->index *8 , 0); // move to static position
+    obj_set_pos(apple->mem_addr, 2 + (apple->index * 8) , 24); // move to static position
     apple->active = 0; // set as not active (not thrown yet)
 }
 
@@ -174,23 +174,8 @@ void squirrel_move_towards(Sprite *squirrel, Sprite *destination_sprite)
 		squirrel->mem_addr->attr1 ^= ATTR1_HFLIP;
 		squirrel->dir_facing = -1;
 	}
-
-
-	// if squirrel is in hit box, kill squirrel
-	int hb = 8;
-	if ((Sx >= (Px - hb)) && (Sx <= (Px + hb)))
-	{
-		// if within y range
-		if ((Sy >= (Py - hb)) && (Sy <= (Py + hb)))
-		{
-			// remove squirrel
-			squirrel_kill_animation(squirrel);
-		}
-	}
-
-
     
-    walk_animation(squirrel, 4);
+    walk_animation(squirrel, 4); // walk animation
 
 }
 

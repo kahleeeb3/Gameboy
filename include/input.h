@@ -5,6 +5,7 @@
 #define PLAYER_SIZE 			32
 #define PLAYER_PAL_OFFSET 		0
 #define PLAYER_PAL_BANK 		0
+#define PLAYER_HIT_BOX			8
 #define PLAYER_FRAME1 			0
 #define PLAYER_FRAME2 			16
 #define PLAYER_FRAME3 			32
