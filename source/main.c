@@ -103,6 +103,9 @@ void play()
 	
 	srand(time(NULL)); // seed random number generator
 	text_init(); // initialize text placement
+
+	tte_printf("#{P:67,86}press A to start game.");
+	key_wait_till_hit(KEY_A);
 	
 	// Overflow every ~1 second:
     // 0x4000 ticks @ FREQ_1024
