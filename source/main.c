@@ -16,6 +16,8 @@ Sprite* squirrels[APPLE_MAX]; // array of squirrel sprite pointers
 
 int player_score = 0;
 int squirrel_count = 0;
+u32 minutes = 0;
+u32 seconds = 0;
 
 void copy_tiles(const unsigned int *tileSet, int tileSetStart, int tileSetLen)
 {
@@ -47,9 +49,48 @@ void text_init()
 	tte_init_con(); // Initialize the console I/O for text output
 }
 
+u32 init_timer()
+{
+	// Overflow every ~1 second:
+    // 0x4000 ticks @ FREQ_1024
+    REG_TM2D = -0x4000;          // 0x4000 ticks till overflow
+    REG_TM2CNT = TM_FREQ_1024;   // we're using the 1024 cycle timer
 
-void squirrel_spawn(){
-	Sprite *squirrel = squirrels[squirrel_count];
+    REG_TM2CNT |= TM_ENABLE;
+    REG_TM3CNT = TM_ENABLE | TM_CASCADE;
+	u32 sec = -1;
+
+	return sec;
+
+}
+
+u32 restart_timer()
+{
+	u32 sec = -1;
+	REG_TM3CNT = 0;
+	REG_TM3CNT = TM_ENABLE | TM_CASCADE;
+	return sec;
+}
+
+void clear_text()
+{
+	tte_printf("#{es;P:0,0}");
+}
+
+void display_score()
+{
+	tte_printf("#{P:2,0}Score: %d", player_score);
+	tte_printf("#{P:2,12}Squirrels: %d", squirrel_count);
+}
+
+void display_timer()
+{
+	// update time display
+	tte_printf("#{P:210,0}%02d:%02d", minutes, seconds);
+}
+
+void squirrel_spawn(int index){
+	Sprite *squirrel = squirrels[index];
 	int x = rand() % (SCREEN_WIDTH + 1);
 	int y = rand() % (SCREEN_HEIGHT + 1);
 	squirrel->x_pos = x;
@@ -58,7 +99,6 @@ void squirrel_spawn(){
 	obj_unhide(squirrel->mem_addr, ATTR0_4BPP);
 	squirrel->active = 1;
 }
-
 
 Sprite *init_sprite(int sprite_num, int size, int tile_id, int pal_bank, int active, int x, int y)
 {
@@ -107,20 +147,14 @@ void play()
 	tte_printf("#{P:67,86}press A to start game.");
 	key_wait_till_hit(KEY_A);
 	
-	// Overflow every ~1 second:
-    // 0x4000 ticks @ FREQ_1024
-    REG_TM2D = -0x4000;          // 0x4000 ticks till overflow
-    REG_TM2CNT = TM_FREQ_1024;   // we're using the 1024 cycle timer
-
-    REG_TM2CNT |= TM_ENABLE;
-    REG_TM3CNT = TM_ENABLE | TM_CASCADE;
-
-    u32 sec = -1;
-
 	// track the round data
-	int round_number = 1;
-	int squirrels_spawned_in_round = 0;
-	u32 round_start_time = 0;
+	int r_num = 1; // the current round number
+	int r_squirrels = 0; // number of squirrels spawned in the round
+	u32 r_t0 = 0; // round start time
+	// u32 r_dt0 = 0; // time since round start
+
+	// start timer
+	u32 sec = init_timer();
 
 	while (1)
 	{
@@ -131,18 +165,36 @@ void play()
         // Check if the current time has changed
         if (REG_TM3D != sec)
         {
-            // Update the stored time
-            sec = REG_TM3D;
+            
+            sec = REG_TM3D; // Update the stored time
+            // u32 hours = sec / 3600; // Convert the time to hours
+            minutes = (sec % 3600) / 60; // Convert the time to minutes
+            seconds = sec % 60; // Convert the time to seconds
 
-            // Convert the time to hours, minutes, and seconds
-            // u32 hours = sec / 3600;
-            u32 minutes = (sec % 3600) / 60;
-            u32 seconds = sec % 60;
+			clear_text();
+			display_score();
+			display_timer();
 
-            tte_printf("#{es;P:0,0}");
-			tte_printf("#{P:2,0}Score: %d", player_score);
-			tte_printf("#{P:2,12}Squirrels: %d", squirrel_count);
-			tte_printf("#{P:210,0}%02d:%02d", minutes, seconds);
+			// if first 3 seconds of round
+			if((sec-r_t0) < 3)
+			{
+				// display count down
+				tte_printf("#{P:100,0}ROUND %d", r_num);
+				tte_printf("#{P:120,12}%d", 3-(sec-r_t0));
+			}
+
+			// if after the first 3 seconds
+			else
+			{
+				// if squirrels spawned is less than max
+				if( r_squirrels < SQUIRREL_MAX)
+				{
+					squirrel_spawn(r_squirrels); // spawn a squirrel
+					r_squirrels++; // increase squirrels spawned in round so far
+					squirrel_count++; // increase the number squirrels alive
+				}
+			}
+
         }
 		
 		// slow frame rate
@@ -151,28 +203,13 @@ void play()
 			vid_vsync(); // wait for VBlank
 			key_poll();	 // poll which keys are activated
 		}
-
-		if( (sec-round_start_time) < 3){
-			tte_printf("#{P:100,0}ROUND %d", round_number);
-			tte_printf("#{P:120,12}%d", 3-(sec-round_start_time));
-		}
-		else
-		{
-			// spawn some squirrels
-			if( squirrels_spawned_in_round < SQUIRREL_MAX)
-			{
-				squirrel_spawn();
-				squirrels_spawned_in_round++;
-				squirrel_count++;
-			}
-		}
 		
 		// if there are no more squirrels, start a new round
-		if( (squirrel_count == 0) && (squirrels_spawned_in_round == SQUIRREL_MAX) )
+		if( (squirrel_count == 0) && (r_squirrels == SQUIRREL_MAX) )
 		{
-			round_number++;
-			squirrels_spawned_in_round = 0;
-			round_start_time = sec;
+			r_num++; // increase the round number
+			r_squirrels = 0; // set number of squirrels spawned to 0
+			r_t0 = sec+1; // set the start time of the round
 		}
 
 		// move the player sprite
@@ -262,19 +299,17 @@ void play()
 		{
 			REG_DISPCNT = DCNT_MODE0 | DCNT_BG0; // Disable Objects & OBJ-VRAM as array
 			tte_printf("#{es;P:84,50}GAME OVER");
-			tte_printf("#{P:65,62}You Survived %d Round", round_number);
+			tte_printf("#{P:65,62}You Survived %d Round", r_num);
 			tte_printf("#{P:67,86}press A to try again.");
 			key_wait_till_hit(KEY_A);
 
 			// reset scores
 			player_score = 0;
 			squirrel_count = 0;
-			round_number = 1;
-			squirrels_spawned_in_round = 0;
-			sec = -1;
-			REG_TM3CNT = 0;
-			REG_TM3CNT = TM_ENABLE | TM_CASCADE;
-			round_start_time = sec+1;
+			r_num = 1;
+			r_squirrels = 0;
+			sec = restart_timer();
+			r_t0 = sec+1;
 
 
 			// kill remaining squirrels
