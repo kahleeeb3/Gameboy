@@ -20,6 +20,9 @@ int squirrel_count = 0;
 u32 minutes = 0;
 u32 seconds = 0;
 
+
+Map map;
+
 void copy_tiles(const unsigned int *tileSet, int tileSetStart, int tileSetLen)
 {
 	memcpy(&tile_mem[4][tileSetStart], tileSet, tileSetLen);
@@ -146,8 +149,8 @@ void play()
 	
 	srand(time(NULL)); // seed random number generator
 
-	tte_printf("#{P:67,86}press A to start game.");
-	key_wait_till_hit(KEY_A);
+	// tte_printf("#{P:67,86}press A to start game.");
+	// key_wait_till_hit(KEY_A);
 	
 	// track the round data
 	int r_num = 1; // the current round number
@@ -157,7 +160,7 @@ void play()
 
 	// start timer
 	u32 sec = init_timer();
-
+	
 	while (1)
 	{
 
@@ -191,7 +194,7 @@ void play()
 				// if squirrels spawned is less than max
 				if( r_squirrels < SQUIRREL_MAX)
 				{
-					squirrel_spawn(r_squirrels); // spawn a squirrel
+					// squirrel_spawn(r_squirrels); // spawn a squirrel
 					r_squirrels++; // increase squirrels spawned in round so far
 					squirrel_count++; // increase the number squirrels alive
 				}
@@ -215,7 +218,7 @@ void play()
 		}
 
 		// move the player sprite
-		int action = move_player(player);
+		int action = move_player(player, &map);
 		
 		// for each apple
 		for (int i = 0; i < APPLE_MAX; i++)
@@ -338,6 +341,9 @@ void map_init()
 
     REG_BG1HOFS = 150;
     REG_BG1VOFS = 160;
+
+	map.x_pos = 150;
+	map.y_pos = 160;
 }
 
 int main()
@@ -346,12 +352,13 @@ int main()
 	REG_DISPCNT = DCNT_OBJ | DCNT_OBJ_1D; // Enable Objects & OBJ-VRAM as array
 
 	map_init();
+	
 	text_init(); // initialize text placement
 
 	// copy tile data to memory
 	copy_tiles(playerTiles, PLAYER_FRAME1, playerTilesLen); // player tiles
 	copy_tiles(appleTiles, APPLE_FRAME1, appleTilesLen); // apple tiles
-	copy_tiles(squirrelTiles, 66, squirrelTilesLen); // squirrel tiles
+	copy_tiles(squirrelTiles, SQUIRREL_FRAME1, squirrelTilesLen); // squirrel tiles
 
 	// copy palette data to memory
 	copy_palette(playerPal, PLAYER_PAL_OFFSET, playerPalLen); // player palette
@@ -359,7 +366,7 @@ int main()
 	copy_palette(squirrelPal, SQUIRREL_PAL_OFFSET, squirrelPalLen); // squirrel palette
 	
 	// generate player sprite
-	player = init_sprite(0, PLAYER_SIZE, PLAYER_FRAME1, PLAYER_PAL_BANK, 1, 100, 50);
+	player = init_sprite(0, PLAYER_SIZE, PLAYER_FRAME1, PLAYER_PAL_BANK, 1, 104, 64);
 	player->throwing = 0; // set that the player is not throwing
 
 	// fill sprite slots 1 through APPLE_MAX with apple sprites

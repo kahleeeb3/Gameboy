@@ -192,7 +192,7 @@ void player_throw_animation(Sprite *player)
     player->mem_addr->attr2 = PLAYER_FRAME3; // change to frame 3
 }
 
-int move_player(Sprite *player)
+int move_player(Sprite *player, Map *map)
 {
 
     // if A is held
@@ -216,10 +216,98 @@ int move_player(Sprite *player)
     // if directional key is pressed
     if(key_tri_horz() || key_tri_vert())
     {
-        // update player position based on key input
-        player->x_pos += PLAYER_SPEED*key_tri_horz();
-        player->y_pos += PLAYER_SPEED*key_tri_vert();
+        
+		// map boundaries are x->{0, 270}, y->{0, 260}
+        // define player at center of screen if at (104, 64)
 
+        
+        // if player wants to move left
+        if ( key_held(KEY_LEFT) )
+        {
+            // if player is right of center
+            if ( player->x_pos > 104)
+            {
+                // move the player left
+                player->x_pos += PLAYER_SPEED*key_tri_horz();
+            }
+
+            // if the map is NOT FULLY LEFT
+            else if (map->x_pos > 0)
+            {
+                // move the map left
+                map->x_pos += PLAYER_SPEED*key_tri_horz();
+                REG_BG1HOFS= map->x_pos;
+            }
+
+            // if map is FULLY LEFT and player not to the right of center
+            else
+            {
+                // move player left
+                player->x_pos += PLAYER_SPEED*key_tri_horz();
+            }
+
+        }
+
+        // same but for the right direction
+        if ( key_held(KEY_RIGHT) )
+        {
+            if ( player->x_pos < 104)
+            {
+                player->x_pos += PLAYER_SPEED*key_tri_horz();
+            }
+            else if (map->x_pos < 270)
+            {
+                map->x_pos += PLAYER_SPEED*key_tri_horz();
+                REG_BG1HOFS= map->x_pos;
+            }
+            else
+            {
+                player->x_pos += PLAYER_SPEED*key_tri_horz();
+            }
+
+        }
+
+        // same but for the down direction
+        if ( key_held(KEY_DOWN) )
+        {
+            if ( player->y_pos < 64)
+            {
+                player->y_pos += PLAYER_SPEED*key_tri_vert();
+            }
+            else if (map->y_pos < 260)
+            {
+                map->y_pos += PLAYER_SPEED*key_tri_vert();
+                REG_BG1VOFS= map->y_pos;
+            }
+            else
+            {
+                player->y_pos += PLAYER_SPEED*key_tri_vert();
+            }
+
+        }
+
+        // same but for the up direction
+        if ( key_held(KEY_UP) )
+        {
+            if ( player->y_pos > 64)
+            {
+                player->y_pos += PLAYER_SPEED*key_tri_vert();
+            }
+            else if (map->y_pos > 0)
+            {
+                map->y_pos += PLAYER_SPEED*key_tri_vert();
+                REG_BG1VOFS= map->y_pos;
+            }
+            else
+            {
+                player->y_pos += PLAYER_SPEED*key_tri_vert();
+            }
+
+        }
+        
+        
+
+        // FLIP THE PLAYER IF YOU NEED TO
         // if left key held and player facing right
         if(key_held(KEY_LEFT) && (player->dir_facing == 1))
         {

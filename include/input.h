@@ -46,8 +46,14 @@ typedef struct{
 	int index; // which sprite occurrence this is (for duplicate sprites)
 }Sprite;
 
+
+typedef struct{
+	int x_pos;
+	int y_pos;
+} Map;
+
 void walk_animation(Sprite *sprite, int end_frame);
-int move_player(Sprite *player);
+int move_player(Sprite *player, Map *map);
 void apple_throw_init(Sprite *apple, Sprite *player);
 void apple_move_animation(Sprite *apple);
 int off_screen(Sprite *sprite);
