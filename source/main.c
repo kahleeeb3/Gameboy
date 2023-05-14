@@ -149,8 +149,12 @@ void play()
 	
 	srand(time(NULL)); // seed random number generator
 
-	// tte_printf("#{P:67,86}press A to start game.");
-	// key_wait_till_hit(KEY_A);
+	REG_DISPCNT ^= DCNT_BG1; // disable background 1
+	REG_DISPCNT ^= DCNT_OBJ; // Disable Objects
+	tte_printf("#{P:67,86}press A to start game.");
+	key_wait_till_hit(KEY_A);
+	REG_DISPCNT ^= DCNT_BG1; // enable background 1
+	REG_DISPCNT ^= DCNT_OBJ; // enable Objects
 	
 	// track the round data
 	int r_num = 1; // the current round number
@@ -194,7 +198,7 @@ void play()
 				// if squirrels spawned is less than max
 				if( r_squirrels < SQUIRREL_MAX)
 				{
-					// squirrel_spawn(r_squirrels); // spawn a squirrel
+					squirrel_spawn(r_squirrels); // spawn a squirrel
 					r_squirrels++; // increase squirrels spawned in round so far
 					squirrel_count++; // increase the number squirrels alive
 				}
@@ -302,7 +306,8 @@ void play()
 		// ===== GAME OVER =====
 		if(player_score<0)
 		{
-			REG_DISPCNT = DCNT_MODE0 | DCNT_BG0; // Disable Objects & OBJ-VRAM as array
+			REG_DISPCNT ^= DCNT_OBJ; // Disable Objects
+			REG_DISPCNT ^= DCNT_BG1; // disable background 1
 			tte_printf("#{es;P:84,50}GAME OVER");
 			tte_printf("#{P:65,62}You Survived %d Round", r_num);
 			tte_printf("#{P:67,86}press A to try again.");
@@ -322,7 +327,8 @@ void play()
 				if(squirrels[i]->active == 1)
 					squirrel_kill_animation(squirrels[i]);
 
-			REG_DISPCNT = DCNT_MODE0 | DCNT_BG0 | DCNT_OBJ | DCNT_OBJ_1D;
+			REG_DISPCNT ^= DCNT_OBJ; // enable Objects
+			REG_DISPCNT ^= DCNT_BG1; // enable background 1
 		}
 		
 		oam_copy(oam_mem, obj_buffer, 1 + APPLE_MAX + SQUIRREL_MAX);
