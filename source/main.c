@@ -8,6 +8,7 @@
 #include "apple.h"
 #include "squirrel.h"
 #include "input.h"
+#include "background.h"
 
 OBJ_ATTR obj_buffer[128]; // allocate space for 128 sprites
 Sprite *player; // global pointer to the player sprite
@@ -31,6 +32,8 @@ void copy_palette(const unsigned int *palSet, int palSetStart, int palSetLen)
 
 void text_init()
 {
+	
+	REG_DISPCNT |= DCNT_BG0; // enbale background 0
 	irq_init(NULL); // Initialize the interrupt system with no callback function
     irq_add(II_VBLANK, NULL); // Add a VBLANK interrupt with no callback function
 
@@ -38,7 +41,7 @@ void text_init()
     // 16x16 character cells using the Verdana 9 font with shading
 	 tte_init_chr4c(
         0,                              // BG number.
-        BG_CBB(0) | BG_SBB(10),         // BG control.
+        BG_CBB(2) | BG_SBB(10),         // BG control.
         0xF000,                         // Screen-entry base
         bytes2word(13, 15, 0, 0),       // Color attributes.
         CLR_WHITE,                      // Ink color
@@ -142,7 +145,6 @@ void play()
 {
 	
 	srand(time(NULL)); // seed random number generator
-	text_init(); // initialize text placement
 
 	tte_printf("#{P:67,86}press A to start game.");
 	key_wait_till_hit(KEY_A);
@@ -325,10 +327,26 @@ void play()
 }
 
 
+void map_init()
+{
+    memcpy(pal_bg_mem, backgroundPal, backgroundPalLen);
+    memcpy(&tile_mem[0][0], backgroundTiles, backgroundTilesLen);
+    memcpy(&se_mem[28][0], backgroundMap, backgroundMapLen);
+
+    REG_BG1CNT= BG_CBB(0) | BG_SBB(28) | BG_4BPP | BG_REG_64x64;
+    REG_DISPCNT |= DCNT_MODE0 | DCNT_BG1;
+
+    REG_BG1HOFS = 150;
+    REG_BG1VOFS = 160;
+}
+
 int main()
 {
 	oam_init(obj_buffer, 128); // initialize 128 sprites
-	REG_DISPCNT = DCNT_MODE0 | DCNT_BG0 | DCNT_OBJ | DCNT_OBJ_1D; // Enable Objects & OBJ-VRAM as array
+	REG_DISPCNT = DCNT_OBJ | DCNT_OBJ_1D; // Enable Objects & OBJ-VRAM as array
+
+	map_init();
+	text_init(); // initialize text placement
 
 	// copy tile data to memory
 	copy_tiles(playerTiles, PLAYER_FRAME1, playerTilesLen); // player tiles
