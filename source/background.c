@@ -1,19 +1,7 @@
-
-//{{BLOCK(background)
-
-//======================================================================
-//
-//	background, 512x512@4, 
-//	+ palette 16 entries, not compressed
-//	+ 437 tiles (t|f|p reduced) not compressed
-//	+ regular map (in SBBs), not compressed, 64x64 
-//	Total size: 32 + 13984 + 8192 = 22208
-//
-//	Time-stamp: 2023-05-13, 19:35:36
-//	Exported by Cearn's GBA Image Transmogrifier, v0.8.6
-//	( http://www.coranac.com/projects/#grit )
-//
-//======================================================================
+#include <tonc.h>
+#include <stdlib.h> // for malloc
+#include <string.h> // for memcpy
+#include "background.h"
 
 const unsigned short backgroundTiles[6992] __attribute__((aligned(4)))=
 {
@@ -1587,4 +1575,28 @@ const unsigned short backgroundPal[16] __attribute__((aligned(4)))=
 	0x1508,0x2DD2,0x1506,0x1507,0x35F2,0x31D2,0x0442,0x1908,
 };
 
-//}}BLOCK(background)
+Map *map_init()
+{
+
+	Map *newMap = (Map *)malloc(sizeof(Map));
+
+    memcpy(pal_bg_mem, backgroundPal, backgroundPalLen);
+    memcpy(&tile_mem[0][0], backgroundTiles, backgroundTilesLen);
+    memcpy(&se_mem[28][0], backgroundMap, backgroundMapLen);
+
+    // set the background 1 attributes
+	REG_BG1CNT= BG_CBB(0) | BG_SBB(28) | BG_4BPP | BG_REG_64x64;
+    
+	// set video mode 0 and enable background 1
+	REG_DISPCNT |= DCNT_MODE0 | DCNT_BG1;
+
+    // the center of the map is roughly (150, 160)
+	// map boundaries are x->{0, 270}, y->{0, 260}
+	REG_BG1HOFS = 150;
+    REG_BG1VOFS = 160;
+
+	newMap->x_pos = 150;
+	newMap->y_pos = 160;
+
+	return newMap;
+}
