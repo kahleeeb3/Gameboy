@@ -29,27 +29,19 @@ int squirrel_count = 0;
 
 int building_off_screen(Sprite *building)
 {
-	int t = building->x_pos;
-	int b = building->x_pos + 128;
 
-	int r = building->x_pos + 128;
-	int l = building->x_pos;
+	int top = building->y_pos; // top of the building
+	int bottom = building->y_pos + 128; // bottom of the building
 
-	if( r < 0 ){
+	if( top > SCREEN_HEIGHT ){
 		return 1;
 	}
-	else if( l > SCREEN_WIDTH ){
+	if (bottom < 0)
+	{
 		return 1;
 	}
-	else if( t > SCREEN_HEIGHT ){
-		return 1;
-	}
-	else if( b < 0 ){
-		return 1;
-	}
-	else{
-		return 0;
-	}
+
+	return 0;
 }
 
 

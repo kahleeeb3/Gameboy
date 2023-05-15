@@ -3,7 +3,8 @@ arm-none-eabi-gdb Gameboy.elf
 target remote 192.168.1.4:2345
 ```
 
-I need to fix hiding the buildings tomorrow.
+- fix hiding the buildings
+- fix text hidden behind sprites
 
 ```c
 // lilly
@@ -16,7 +17,7 @@ int y = 127;
 
 // baxter
 int x = 205;
-int y = 127;
+int y = -127;
 
 // goodrich
 int x = 188;

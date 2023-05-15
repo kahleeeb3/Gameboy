@@ -876,7 +876,7 @@ void set_squirrels_attributes(OBJ_ATTR *obj_buffer, Sprite** squirrels)
 void set_buildings_attributes(OBJ_ATTR *obj_buffer, OBJ_AFFINE *obj_aff_buffer, Sprite** buildings)
 {
 	
-	int building_positions[8][2] = {{-51, 134}, {83, 127}, {205, 127}, {188, 96}, {-70, -128}, {-183, -71}, {248, 3}, {69, -97}};
+	int building_positions[8][2] = {{-51, 134}, {83, 127}, {205, -127}, {188, 96}, {-70, -128}, {-183, -71}, {248, 3}, {69, -97}};
 	
 	// fill remaining slots with building sprites
 	for(int i = 0; i < BUILDINGS_MAX; i++){
