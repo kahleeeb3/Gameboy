@@ -875,6 +875,9 @@ void set_squirrels_attributes(OBJ_ATTR *obj_buffer, Sprite** squirrels)
 
 void set_buildings_attributes(OBJ_ATTR *obj_buffer, OBJ_AFFINE *obj_aff_buffer, Sprite** buildings)
 {
+	
+	int building_positions[8][2] = {{-51, 134}, {83, 127}, {205, 127}, {188, 96}, {-70, -128}, {-183, -71}, {248, 3}, {69, -97}};
+	
 	// fill remaining slots with building sprites
 	for(int i = 0; i < BUILDINGS_MAX; i++){
 		int sprite_num = 1 + APPLE_MAX + SQUIRREL_MAX + i;
@@ -882,14 +885,14 @@ void set_buildings_attributes(OBJ_ATTR *obj_buffer, OBJ_AFFINE *obj_aff_buffer, 
 		// building locations will be defined by where they
 		// reside on the map. Not where they are on the screen
 		// this will be a bit tricky.
-		int x = 0;
-		int y = 0;
+		int x = building_positions[i][0];
+		int y = building_positions[i][1];
 
 		Sprite *newBuilding = mkSpriteStruct(&obj_buffer[sprite_num], BUILDINGS_SIZE, BUILDING_FRAME1 + (i*64), BUILDINGS_PAL_BANK, 1, x, y);
 		newBuilding->index = i; // set the index of the building
-		buildings[i] = newBuilding; // add to list of buildings
 		scale_sprite(newBuilding, &obj_aff_buffer[i], i, 2); // scale by a factor of 2
-		obj_hide(newBuilding->mem_addr); // hide the building sprites
+		buildings[i] = newBuilding; // add to list of buildings
+		// obj_hide(newBuilding->mem_addr); // hide the building sprites
 		
 	}
 	obj_aff_copy(obj_aff_mem, obj_aff_buffer, BUILDINGS_MAX);

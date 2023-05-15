@@ -69,6 +69,7 @@
 typedef struct{
 	OBJ_ATTR *mem_addr; // pointer to location in object mem
 	int throwing; // bool value for if the player sprite threw an apple
+	int hidden; // bool for if the sprite is visible or not
 	int size; // number of pixels in the horizontal direction
     int active; // if the sprite is an active part of the game (visibility)
 	int start_tile; // tile number of the first tile

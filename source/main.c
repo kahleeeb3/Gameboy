@@ -27,6 +27,31 @@ Sprite* buildings[BUILDINGS_MAX]; // array of squirrel sprite pointers
 int player_score = 0;
 int squirrel_count = 0;
 
+int building_off_screen(Sprite *building)
+{
+	int t = building->x_pos;
+	int b = building->x_pos + 128;
+
+	int r = building->x_pos + 128;
+	int l = building->x_pos;
+
+	if( r < 0 ){
+		return 1;
+	}
+	else if( l > SCREEN_WIDTH ){
+		return 1;
+	}
+	else if( t > SCREEN_HEIGHT ){
+		return 1;
+	}
+	else if( b < 0 ){
+		return 1;
+	}
+	else{
+		return 0;
+	}
+}
+
 
 void finalize_sprite_positions(Sprite *player)
 {
@@ -50,6 +75,15 @@ void finalize_sprite_positions(Sprite *player)
 		}
 	}
 
+	// set the updated position for all active buildings
+	for(int i=0; i<BUILDINGS_MAX; i++)
+	{
+		Sprite *building = buildings[i];
+		if(building->active == 1){
+			obj_set_pos(building->mem_addr, building->x_pos, building->y_pos);
+		}
+	}
+
 }
 
 void move_all_sprites(int x_dir, int y_dir, int speed)
@@ -70,9 +104,40 @@ void move_all_sprites(int x_dir, int y_dir, int speed)
 		Sprite *squirrel = squirrels[i];
 		if(squirrel->active == 1){
 			move_sprite(squirrel, x_dir * -1, y_dir * -1, speed);
+			if( off_screen(squirrel) == 1 ){
+				squirrel->hidden = 1;
+				obj_hide(squirrel->mem_addr);
+			}
+			else{
+				if(squirrel->hidden){
+					obj_unhide(squirrel->mem_addr, ATTR1_SIZE_16);
+				}
+			}
 
 		}
 	}
+
+	// move all active buildings
+	for(int i=0; i<BUILDINGS_MAX; i++)
+	{
+		Sprite *building = buildings[i];
+		if(building->active == 1){
+			move_sprite(building, x_dir * -1, y_dir * -1, speed);
+			if( building_off_screen(building) == 1 ){
+				building->hidden = 1;
+				obj_hide(building->mem_addr);
+			}
+			else{
+				if(building->hidden){
+					obj_unhide(building->mem_addr, ATTR1_SIZE_16);
+					scale_sprite(building, &obj_aff_buffer[i], i, 2); // scale by a factor of 2
+
+				}
+			}
+
+		}
+	}
+
 }
 
 void move_map(Map *map, int x_dir, int y_dir, int speed)
