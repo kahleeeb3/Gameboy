@@ -1,4 +1,10 @@
+#include <tonc.h>
+#include <stdlib.h> // for malloc
+#include <string.h> // for memcpy
 
+
+#ifndef MAP
+#define MAP
 
 #define backgroundTilesLen 13984
 
@@ -13,3 +19,5 @@ typedef struct{
 } Map;
 
 Map *map_init();
+
+#endif // MAP

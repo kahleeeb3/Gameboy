@@ -1,6 +1,3 @@
-#include <tonc.h>
-#include <stdlib.h> // for malloc
-#include <string.h> // for memcpy
 #include "background.h"
 
 const unsigned short backgroundTiles[6992] __attribute__((aligned(4)))=

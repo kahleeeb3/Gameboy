@@ -5,6 +5,15 @@
 // #include <string.h>
 #include "background.h"
 #include "sprites.h"
+#include "animations.h"
+#include "helper.h"
+
+#define MAP_MAX_X 270
+#define MAP_MAX_Y 260
+#define PLAYER_MAX_X 208
+#define PLAYER_MIN_X 0
+#define PLAYER_MAX_Y 128
+#define PLAYER_MIN_Y 29
 
 OBJ_ATTR obj_buffer[128]; // allocate space for 128 sprites
 OBJ_AFFINE *obj_aff_buffer= (OBJ_AFFINE*)obj_buffer; // buffer for object affine
@@ -18,48 +27,52 @@ Sprite* buildings[BUILDINGS_MAX]; // array of squirrel sprite pointers
 int player_score = 0;
 int squirrel_count = 0;
 
-#define MAP_MAX_X 270
-#define MAP_MAX_Y 260
-#define PLAYER_MAX_X 208
-#define PLAYER_MIN_X 0
-#define PLAYER_MAX_Y 128
-#define PLAYER_MIN_Y 29
 
-void text_init()
+void finalize_sprite_positions(Sprite *player)
 {
+	// set the updated position for player
+	obj_set_pos(player->mem_addr, player->x_pos, player->y_pos); // set player position
 
-	/*
-	 * To be quite frank, the full functionality of this is a bit complex.
-	 * Most of this code was borrowed from the library documentation.
-	 * https://www.coranac.com/tonc/text/tte.htm
-	 * Essentially it enables a set of text tiles (similar to sprites)
-	 * and a palette of text colors to use. I provided as much documentation
-	 * as possible here.
-	 */
+	// set the updated position for all active apples
+	for (int i = 0; i < APPLE_MAX; i++)
+	{
+		Sprite *apple = apples[i];
+		obj_set_pos(apple->mem_addr, apple->x_pos, apple->y_pos);
+	}
+	
+	// set the updated position for all active squirrels
+	for(int i=0; i<SQUIRREL_MAX; i++)
+	{
+		Sprite *squirrel = squirrels[i];
+		if(squirrel->active == 1){
+			obj_set_pos(squirrel->mem_addr, squirrel->x_pos, squirrel->y_pos);
 
-	REG_DISPCNT |= DCNT_BG0; // enbale background 0
-	irq_init(NULL); // Initialize the interrupt system with no callback function
-    irq_add(II_VBLANK, NULL); // Add a VBLANK interrupt with no callback function
+		}
+	}
 
-	// Initialize the TTE library for displaying text in mode 4 (4bpp) with
-    // 16x16 character cells using the Verdana 9 font with shading
-	 tte_init_chr4c(
-        0,                              // BG number.
-        BG_CBB(2) | BG_SBB(10),         // BG control.
-        0xF000,                         // Screen-entry base
-        bytes2word(13, 15, 0, 0),       // Color attributes.
-        CLR_WHITE,                      // Ink color
-        &verdana9_b4Font,               // Verdana 9, with shade.
-        (fnDrawg)chr4c_drawg_b4cts_fast // b4cts renderer, asm version
-    );
-
-	tte_init_con(); // Initialize the console I/O for text output
 }
 
-void move_sprite(Sprite *sprite, int x_dir, int y_dir, int speed)
+void move_all_sprites(int x_dir, int y_dir, int speed)
 {
-	sprite->x_pos += x_dir*speed;
-	sprite->y_pos += y_dir*speed;
+    // move all active apples
+	for (int i = 0; i < APPLE_MAX; i++)
+	{
+		Sprite *apple = apples[i];
+		if(apple->active == 1){
+			move_sprite(apple, x_dir * -1, y_dir * -1, speed);
+		}
+
+	}
+	
+	// move all active squirrels
+	for(int i=0; i<SQUIRREL_MAX; i++)
+	{
+		Sprite *squirrel = squirrels[i];
+		if(squirrel->active == 1){
+			move_sprite(squirrel, x_dir * -1, y_dir * -1, speed);
+
+		}
+	}
 }
 
 void move_map(Map *map, int x_dir, int y_dir, int speed)
@@ -70,128 +83,8 @@ void move_map(Map *map, int x_dir, int y_dir, int speed)
 	REG_BG1HOFS= map->x_pos;
 	REG_BG1VOFS= map->y_pos;
 
-}
+	move_all_sprites(x_dir, y_dir, speed);
 
-int get_center(Sprite *sprite)
-{
-	return (sprite->size/2) - 1;
-}
-
-int get_rel_y_pos(Sprite *sprite)
-{
-	// y value for center of screen
-	int screen_y_center = SCREEN_HEIGHT/2 - 1;
-
-	// y value for center of player
-	int sprite_y_center = get_center(sprite);
-
-	// relative center for the sprite
-	int rel_y_center = (screen_y_center) - (sprite_y_center);
-
-	// if sprite is below of the center of the screen
-	if ( sprite->y_pos > rel_y_center)
-		return -1;
-	// if sprite is above of the center of the screen
-	else if ( sprite->y_pos < rel_y_center)
-		return 1;
-
-	// player is center
-	else
-		return 0;
-}
-
-int get_rel_x_pos(Sprite *sprite)
-{
-	// x value for center of screen
-	int screen_x_center = SCREEN_WIDTH/2 - 1;
-
-	// x value for center of player
-	int sprite_x_center = get_center(sprite);
-
-	// relative center for the sprite
-	int rel_x_center = (screen_x_center) - (sprite_x_center);
-
-	// if sprite is left of the center of the screen
-	if ( sprite->x_pos < rel_x_center)
-		return -1;
-	// if sprite is right of the center of the screen
-	else if ( sprite->x_pos > rel_x_center)
-		return 1;
-
-	// player is center
-	else
-		return 0;
-}
-
-int get_rel_diag_pos(Sprite *sprite)
-{
-	int screen_x_center = SCREEN_WIDTH/2 - 1;
-	int screen_y_center = SCREEN_HEIGHT/2 - 1;
-
-	int sprite_x_center = get_center(sprite);
-	int sprite_y_center = get_center(sprite);
-
-	int rel_x_center = (screen_x_center) - (sprite_x_center);
-	int rel_y_center = (screen_y_center) - (sprite_y_center);
-
-	// Sprite is NE
-	if ( (sprite->x_pos > rel_x_center) && (sprite->y_pos < rel_y_center) )
-		return 1; // in first quadrant
-
-	// Sprite is NW
-	else if ( (sprite->x_pos < rel_x_center) && (sprite->y_pos < rel_y_center) )
-		return 2; // in second quadrant
-
-	// Sprite is SW
-	else if ( (sprite->x_pos < rel_x_center) && (sprite->y_pos > rel_y_center) )
-		return 3; // in third quadrant
-
-	// Sprite is SE
-	else if ( (sprite->x_pos > rel_x_center) && (sprite->y_pos > rel_y_center) )
-		return 4; // in third quadrant
-
-	else
-		return -1; // player is center
-
-}
-
-void walk_animation(Sprite *sprite, int end_frame)
-{
-    // get start_tile from spriteStruct
-	int st = sprite->start_tile;
-	// get curr_frame from spriteStruct
-	int cf = sprite->curr_frame;
-	// get size from spriteStruct
-	int s = sprite->size;
-	// get pal_bank from spriteStruct
-	int pb = sprite->pal_bank;
-    // number of tiles that make up a single frame
-    int tpf = (s*s)/(8*8);
-
-	// update attribute 2
-	sprite->mem_addr->attr2 = ATTR2_PALBANK(pb) | (st + (tpf * cf));
-	cf = (cf + 1) % end_frame;
-
-	//update curr_frame
-	sprite->curr_frame = cf;
-}
-
-void turn_animation(Sprite *sprite)
-{
-    // flip the sprite
-    sprite->mem_addr->attr1 ^= ATTR1_HFLIP;
-
-    // change the sprite facing direction
-    if(sprite->dir_facing == 1)
-        sprite->dir_facing = -1;
-    else
-        sprite->dir_facing = 1;
-}
-
-void player_skid_animation(Sprite *player)
-{
-    player->mem_addr->attr2 = PLAYER_FRAME4; // switch to frame 4
-    turn_animation(player); // flip the sprite        
 }
 
 void traverse(Sprite *player)
@@ -481,10 +374,17 @@ void play_game()
 
 	Sprite *player = players[0]; // define the player
 
+	// spawn all the squirrels
+	for( int i=0; i<SQUIRREL_MAX; i++){
+		spawn_squirrel(i, squirrels);
+		squirrel_count++;
+	}
+
 	while(1)
 	{
 		VBlankIntrWait(); // Wait for the VBLANK interrupt
-
+		tte_printf("#{es;P:2,0}Score: %d", player_score);
+		tte_printf("#{P:2,12}Squirrels: %d", squirrel_count);
 
 		// slow player input a little
 		for (int i = 0; i < 4; i++)
@@ -493,9 +393,58 @@ void play_game()
 			key_poll();	 // poll which keys are activated
 		}
 
-		traverse(player);
+		traverse(player); // let player traverse map
 
-		obj_set_pos(player->mem_addr, player->x_pos, player->y_pos); // set player position
+
+		// for each apple
+		for (int i = 0; i < APPLE_MAX; i++)
+		{
+			// define selected apple
+			Sprite *apple = apples[i];
+
+			if(apple->active == 0)
+			{
+				// if A is held
+				if( key_held(KEY_A) )
+				{
+					player->throwing = 1; // set player as throwing
+				}
+
+				// if player has thrown
+				else if (player->throwing == 1)
+				{
+					// player_throw_animation(player);
+					apple_throw_init(apple, player);
+					player->throwing = 0; // set as player not throwing anymore
+				}
+			}
+			else
+			{
+				
+				move_sprite(apple, apple->dir_facing, 0, APPLE_SPEED);
+
+				if( off_screen(apple) )
+				{
+					apple_kill_animation(apple);
+				}
+
+				// if the apple hit a squirrel
+				for(int i=0; i<SQUIRREL_MAX; i++)
+				{
+					Sprite *squirrel = squirrels[i];
+					if(squirrel->active == 1){
+						if( collision(apple, squirrel, SQUIRREL_HIT_BOX) == 1 ){
+							squirrel_kill_animation(squirrel);
+							player_score++;
+							squirrel_count--;
+						}
+
+					}
+				}
+			}
+		}
+
+		finalize_sprite_positions(player); // update all sprite positions
 		oam_copy(oam_mem, obj_buffer, 1 + APPLE_MAX + SQUIRREL_MAX + BUILDINGS_MAX); // update all sprites
 
 	}

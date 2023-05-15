@@ -1,5 +1,9 @@
 #include <tonc.h>
 
+
+#ifndef SPRITES
+#define SPRITES
+
 // Define Max Quantities
 #define PLAYER_MAX      1
 #define APPLE_MAX 		5
@@ -86,3 +90,5 @@ void set_player_attributes(OBJ_ATTR *obj_buffer, Sprite** players);
 void set_apples_attributes(OBJ_ATTR *obj_buffer, Sprite** apples);
 void set_squirrels_attributes(OBJ_ATTR *obj_buffer, Sprite** squirrels);
 void set_buildings_attributes(OBJ_ATTR *obj_buffer, OBJ_AFFINE *obj_aff_buffer, Sprite** buildings);
+
+#endif // SPRITES
