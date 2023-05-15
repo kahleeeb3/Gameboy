@@ -32,12 +32,16 @@ int building_off_screen(Sprite *building)
 
 	int top = building->y_pos; // top of the building
 	int bottom = building->y_pos + 128; // bottom of the building
+	int right = building->x_pos + 128;
 
 	if( top > SCREEN_HEIGHT ){
 		return 1;
 	}
-	if (bottom < 0)
+	if(bottom < 0)
 	{
+		return 1;
+	}
+	if(right<0){
 		return 1;
 	}
 

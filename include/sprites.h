@@ -8,7 +8,7 @@
 #define PLAYER_MAX      1
 #define APPLE_MAX 		5
 #define SQUIRREL_MAX	5
-#define BUILDINGS_MAX 	3
+#define BUILDINGS_MAX 	8
 
 // These will be moved to input later
 #define PLAYER_SPEED 		5

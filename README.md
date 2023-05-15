@@ -7,19 +7,19 @@ target remote 192.168.1.4:2345
 - fix text hidden behind sprites
 
 ```c
-// lilly
+// lilly (needs to be split into two sprites)
 int x = -51;
 int y = 134;
 
-// sparks
+// sparks (need to go off center of sprite instead of corner)
 int x = 83;
 int y = 127;
 
-// baxter
+// baxter (need to go off center of sprite instead of corner)
 int x = 205;
 int y = -127;
 
-// goodrich
+// goodrich (fine the way it is)
 int x = 188;
 int y = 96;
 
