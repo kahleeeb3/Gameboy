@@ -122,7 +122,6 @@ int off_screen(Sprite *sprite)
     }
 }
 
-
 void text_init()
 {
 

@@ -13,7 +13,7 @@
 #define PLAYER_MAX_X 208
 #define PLAYER_MIN_X 0
 #define PLAYER_MAX_Y 128
-#define PLAYER_MIN_Y 29
+#define PLAYER_MIN_Y 0
 
 OBJ_ATTR obj_buffer[128]; // allocate space for 128 sprites
 OBJ_AFFINE *obj_aff_buffer= (OBJ_AFFINE*)obj_buffer; // buffer for object affine
@@ -425,8 +425,8 @@ void traverse(Sprite *player)
 
 void play_game()
 {
-
 	Sprite *player = players[0]; // define the player
+	int showing_map = 0;
 
 	// spawn all the squirrels
 	for( int i=0; i<SQUIRREL_MAX; i++){
@@ -448,6 +448,16 @@ void play_game()
 		}
 
 		traverse(player); // let player traverse map
+
+		if(key_is_down(KEY_R) && showing_map == 0){
+			REG_DISPCNT ^= DCNT_WIN0 | DCNT_WIN1; // enable window 0 and 1
+			showing_map = 1;
+		}
+		if (key_is_up(KEY_R) && showing_map == 1){
+			REG_DISPCNT ^= DCNT_WIN0 | DCNT_WIN1; // enable window 0 and 1
+			showing_map = 0;
+		}
+
 
 
 		// for each apple
@@ -498,26 +508,56 @@ void play_game()
 			}
 		}
 
+		// move each squirrel
+		for(int i=0; i<SQUIRREL_MAX; i++){
+			Sprite *squirrel = squirrels[i];
+			if(squirrel->active == 1){
+				if(squirrel->hidden == 1){
+					if(off_screen(squirrel) == 0){
+						obj_unhide(squirrel->mem_addr, ATTR1_SIZE_16);
+					}
+				}
+				walk_animation(squirrel, 4);
+				move_towards(squirrel, player);
+			}
+
+		}
+
 		finalize_sprite_positions(player); // update all sprite positions
 		oam_copy(oam_mem, obj_buffer, 1 + APPLE_MAX + SQUIRREL_MAX + BUILDINGS_MAX); // update all sprites
 
 	}
 }
 
-typedef struct tagRECT_U8 { u8 ll, tt, rr, bb; } ALIGN4 RECT_U8;
-
-RECT_U8 win[2]= 
+void window_init()
 {
-    { 36, 20,  76,  60 },   // win0: 40x40 rect
-    { 0, 24 ,SCREEN_WIDTH, SCREEN_HEIGHT }    // win1: screen minus 12 margin.
-};
+    
+	/*
+	 *
+	 * Im really only going to use window 0 for now
+	 * this will be used for quick displaying the map
+	 */
+	
+	typedef struct tagRECT_U8 { u8 ll, tt, rr, bb; } ALIGN4 RECT_U8;
 
-void win_copy()
-{
-    REG_WIN0H= win[0].ll<<8 | win[0].rr;
+	// define positions
+	RECT_U8 win[2]= 
+	{
+		{ 48, 8,  193,  152 },   // win0: where map will be displayed
+		{ 0, 0 ,SCREEN_WIDTH, SCREEN_HEIGHT }    // win1: the entire screen
+	};
+	
+	// set positions
+	REG_WIN0H= win[0].ll<<8 | win[0].rr;
     REG_WIN1H= win[1].ll<<8 | win[1].rr;
     REG_WIN0V= win[0].tt<<8 | win[0].bb;
     REG_WIN1V= win[1].tt<<8 | win[1].bb;
+
+	// REG_DISPCNT |= DCNT_WIN0 | DCNT_WIN1; // enable window 0 and 1
+
+	// define what goes in each window
+	REG_WININ= WININ_BUILD( 0, (WIN_OBJ | WIN_BG0| WIN_BG1) );
+	REG_WINOUT= WINOUT_BUILD(WIN_BG0, 0);
 }
 
 int main()
@@ -536,17 +576,9 @@ int main()
 	text_init(); // enable the text display
 	srand(time(NULL)); // seed random number generator
 
-	oam_copy(oam_mem, obj_buffer, 1 + APPLE_MAX + SQUIRREL_MAX + BUILDINGS_MAX); // update all sprites
+	oam_copy(oam_mem, obj_buffer, 1 + APPLE_MAX + SQUIRREL_MAX + BUILDINGS_MAX); // update all sprites    
 
-	// REG_DISPCNT |= DCNT_WIN0 | DCNT_WIN1; // enable window 0 and 1
-
-	// (what goes in window 0, what goes in window 1)
-	// REG_WININ= WININ_BUILD( 0, (WIN_OBJ | WIN_BG1) );
-
-	// (what goes in window out, not sure what this is?)
-    // REG_WINOUT= WINOUT_BUILD(WIN_BG0, 0);
-
-	win_copy();
+	window_init();
 	
 	play_game();
 

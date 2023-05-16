@@ -84,3 +84,74 @@ void apple_throw_init(Sprite *apple, Sprite *player)
     apple->active = 1; // set as active (has been thrown)
     apple->dir_facing = player->dir_facing; // which way the apple is going
 }
+
+void move_towards(Sprite *sprite, Sprite *destination_sprite)
+{
+    // find squirrel center
+	int Sx = sprite->x_pos + (sprite->size/2) - 1;
+	int Sy = sprite->y_pos + (sprite->size/2) - 1;
+
+    // find destination center
+	int Px = destination_sprite->x_pos + (destination_sprite->size/2) - 1;
+	int Py = destination_sprite->y_pos + (destination_sprite->size/2) - 1;
+
+    // find x and y distance between them
+	int dx = Px - Sx;
+	int dy = Py - Sy;
+
+    // determine direction to move
+	int x_dir = 1; // pos or neg 1
+	int y_dir = 1; // pos or neg 1
+	if(dx < 0)
+		x_dir = -1;
+	if(dy < 0)
+		y_dir = -1;
+
+    /* 
+	 * Deciding how much to move in the x-direction and y-direction:
+	 * Ideally, this would be done by finding the ratio between the distance needed to travel in each direction 
+	 * and the hypotenuse of the right triangle created by the player and squirrel. However, we can only
+	 * move in integer quantities of pixels. And in situations of Sufficiently small angles, we get a
+	 * divide by zero error. So instead we will take the ratio between the x distance needed to travel and the
+	 * y distance needed to travel. If that ratio is large, we should move solely in the x direction.
+	 * If that angle is small, we should move in the y direction. If its roughly 1, we should move in both directions.
+	 */
+
+    int move_x;
+	int move_y;
+	u16 ratio = (x_dir*dx)/(y_dir*dy);
+
+	if(ratio > 1.25) // x>>y
+	{
+		move_x = 1;
+		move_y = 0;
+	}
+	if(ratio < 0.75) // y >> x
+	{
+		move_x = 0;
+		move_y = 1;
+	}
+	else if((ratio >= 0.75) && (ratio <= 1.25)) // x >> y
+	{
+		move_x = 1;
+		move_y = 1;
+	}
+
+	sprite->x_pos += x_dir * move_x; // update x location
+	sprite->y_pos += y_dir * move_y; // update y location
+	obj_set_pos(sprite->mem_addr, sprite->x_pos, sprite->y_pos);
+
+	// if headed right but facing left
+	if(x_dir == 1 && sprite->dir_facing == -1)
+	{
+		sprite->mem_addr->attr1 ^= ATTR1_HFLIP;
+		sprite->dir_facing = 1;
+	}
+	// headed left but facing right
+	else if(x_dir == -1 && sprite->dir_facing == 1)
+	{
+		sprite->mem_addr->attr1 ^= ATTR1_HFLIP;
+		sprite->dir_facing = -1;
+	}
+    
+}
