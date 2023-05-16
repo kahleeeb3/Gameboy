@@ -504,6 +504,22 @@ void play_game()
 	}
 }
 
+typedef struct tagRECT_U8 { u8 ll, tt, rr, bb; } ALIGN4 RECT_U8;
+
+RECT_U8 win[2]= 
+{
+    { 36, 20,  76,  60 },   // win0: 40x40 rect
+    { 0, 24 ,SCREEN_WIDTH, SCREEN_HEIGHT }    // win1: screen minus 12 margin.
+};
+
+void win_copy()
+{
+    REG_WIN0H= win[0].ll<<8 | win[0].rr;
+    REG_WIN1H= win[1].ll<<8 | win[1].rr;
+    REG_WIN0V= win[0].tt<<8 | win[0].bb;
+    REG_WIN1V= win[1].tt<<8 | win[1].bb;
+}
+
 int main()
 {
 	oam_init(obj_buffer, 128); // initialize 128 sprites
@@ -522,6 +538,16 @@ int main()
 
 	oam_copy(oam_mem, obj_buffer, 1 + APPLE_MAX + SQUIRREL_MAX + BUILDINGS_MAX); // update all sprites
 
+	// REG_DISPCNT |= DCNT_WIN0 | DCNT_WIN1; // enable window 0 and 1
+
+	// (what goes in window 0, what goes in window 1)
+	// REG_WININ= WININ_BUILD( 0, (WIN_OBJ | WIN_BG1) );
+
+	// (what goes in window out, not sure what this is?)
+    // REG_WINOUT= WINOUT_BUILD(WIN_BG0, 0);
+
+	win_copy();
+	
 	play_game();
 
 	// while(1);

@@ -64,6 +64,8 @@ void spawn_squirrel(int index, Sprite** squirrels)
 	Sprite *squirrel = squirrels[index];
 	int x = rand() % (SCREEN_WIDTH + 1);
 	int y = rand() % (SCREEN_HEIGHT + 1);
+	// int x = qran_range(100, 400);
+	// int y = qran_range(200, 280);
 	squirrel->x_pos = x;
 	squirrel->y_pos = y;
 	obj_unhide(squirrel->mem_addr, ATTR0_4BPP);

@@ -39,3 +39,8 @@ int y = 3;
 int x = 69;
 int y = -97;
 ```
+
+```c
+INLINE int qran_range(int min, int max)	
+{    return (qran()*(max-min)>>15)+min;     }
+```

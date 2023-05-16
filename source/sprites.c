@@ -799,7 +799,7 @@ Sprite *mkSpriteStruct(OBJ_ATTR *obj_buffer_location, int size, int tile_id, int
 	}
 
 	// set object attribute 2
-	newSprite->mem_addr->attr2 = ATTR2_PALBANK(pal_bank) | tile_id;
+	newSprite->mem_addr->attr2 = ATTR2_PALBANK(pal_bank) | tile_id | ATTR2_PRIO(1);
 
 	// set object position attribute
 	obj_set_pos(newSprite->mem_addr, x, y);

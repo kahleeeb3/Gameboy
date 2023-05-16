@@ -1583,6 +1583,8 @@ Map *map_init()
 
     // set the background 1 attributes
 	REG_BG1CNT= BG_CBB(0) | BG_SBB(28) | BG_4BPP | BG_REG_64x64;
+	REG_BG1CNT |= BG_PRIO(1); // set background priority
+
     
 	// set video mode 0 and enable background 1
 	REG_DISPCNT |= DCNT_MODE0 | DCNT_BG1;
