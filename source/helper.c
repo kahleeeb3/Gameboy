@@ -110,16 +110,21 @@ int collision(Sprite *s1, Sprite *s2, int hb)
 
 int off_screen(Sprite *sprite)
 {
-    if( (sprite->x_pos > SCREEN_WIDTH) || (sprite->x_pos < 0) ){
-        return 1; // sprite is off screen
-    }
-	else if ( (sprite->y_pos > SCREEN_HEIGHT) || (sprite->y_pos < 0) ){
-        return 1; // sprite is off screen
+    
+	int l = sprite->x_pos;
+	int r = sprite->x_pos + sprite->size - 1;
+	int t = sprite->y_pos;
+	int b = sprite->y_pos + sprite->size - 1;
+	
+	if( (l > SCREEN_WIDTH) || (r < 0) ){
+		return 1;
 	}
-    else
-    {
-        return 0; // sprite is on screen
-    }
+	else if( (t > SCREEN_HEIGHT) || (b < 0) ){
+		return 1;
+	}
+	else{
+		return 0;
+	}
 }
 
 void text_init()
