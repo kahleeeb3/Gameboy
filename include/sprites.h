@@ -8,7 +8,7 @@
 #define PLAYER_MAX      1
 #define APPLE_MAX 		5
 #define SQUIRREL_MAX	5
-#define BUILDINGS_MAX 	8
+#define BUILDINGS_MAX 	16
 
 // These will be moved to input later
 #define PLAYER_SPEED 		5
@@ -28,13 +28,6 @@
 #define SQUIRREL_FRAME3		74
 #define SQUIRREL_FRAME4		78
 #define BUILDING_FRAME1     82
-#define BUILDING_FRAME2     146
-#define BUILDING_FRAME3     210
-#define BUILDING_FRAME4     274
-#define BUILDING_FRAME5     338
-#define BUILDING_FRAME6     402
-#define BUILDING_FRAME7     466
-#define BUILDING_FRAME8     530
 
 // Palette index for spites
 #define PLAYER_PAL_OFFSET 		0
@@ -53,7 +46,7 @@
 #define PLAYER_SIZE 		32
 #define APPLE_SIZE 			8
 #define SQUIRREL_SIZE 		16
-#define BUILDINGS_SIZE      64
+#define BUILDINGS_SIZE      -1
 
 // all sprites will have a palette size of 32
 // because there is 8 colors at 4 bytes per pixel
@@ -64,7 +57,7 @@
 #define playerTilesLen 2048
 #define appleTilesLen 32
 #define squirrelTilesLen 512
-#define buildingTilesLen 2048
+#define buildingTilesLen 1024
 
 typedef struct{
 	OBJ_ATTR *mem_addr; // pointer to location in object mem

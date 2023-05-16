@@ -29,20 +29,28 @@ int squirrel_count = 0;
 
 int building_off_screen(Sprite *building)
 {
+	// first 4 buildings are in the top half
+	// of the map (x2 bc they're in halves) 
 
-	int top = building->y_pos; // top of the building
-	int bottom = building->y_pos + 128; // bottom of the building
-	int right = building->x_pos + 128;
+	// if building on top half of map
+	if(building->index < 8){
+		int bottom = building->y_pos + 64;
+		int right = building->x_pos + 128;
+		if( bottom < 0 ){
+			return 1;
+		}
+		if( right < 0 ){
+			return 1;
+		}
+	}
 
-	if( top > SCREEN_HEIGHT ){
-		return 1;
-	}
-	if(bottom < 0)
-	{
-		return 1;
-	}
-	if(right<0){
-		return 1;
+	// bottom half of the map
+	else{
+		int top = building->y_pos;
+		if( top > SCREEN_HEIGHT ){
+			return 1;
+		}
+
 	}
 
 	return 0;
@@ -119,13 +127,14 @@ void move_all_sprites(int x_dir, int y_dir, int speed)
 		Sprite *building = buildings[i];
 		if(building->active == 1){
 			move_sprite(building, x_dir * -1, y_dir * -1, speed);
+			
 			if( building_off_screen(building) == 1 ){
 				building->hidden = 1;
 				obj_hide(building->mem_addr);
 			}
 			else{
 				if(building->hidden){
-					obj_unhide(building->mem_addr, ATTR1_SIZE_16);
+					obj_unhide(building->mem_addr, ATTR1_SIZE_64x32);
 					scale_sprite(building, &obj_aff_buffer[i], i, 2); // scale by a factor of 2
 
 				}
