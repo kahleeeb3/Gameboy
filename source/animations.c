@@ -91,9 +91,20 @@ void move_towards(Sprite *sprite, Sprite *destination_sprite)
 	int Sx = sprite->x_pos + (sprite->size/2) - 1;
 	int Sy = sprite->y_pos + (sprite->size/2) - 1;
 
-    // find destination center
-	int Px = destination_sprite->x_pos + (destination_sprite->size/2) - 1;
-	int Py = destination_sprite->y_pos + (destination_sprite->size/2) - 1;
+    int Px = 0;
+	int Py = 0;
+	
+	// find destination center
+	if(destination_sprite->size != -1){
+		Px = destination_sprite->x_pos + (destination_sprite->size/2) - 1;
+		Py = destination_sprite->y_pos + (destination_sprite->size/2) - 1;
+	}
+	// for buildings we need to do something different
+	else{
+		Px = destination_sprite->x_pos + (64) - 1;
+		Py = destination_sprite->y_pos;
+	}
+	
 
     // find x and y distance between them
 	int dx = Px - Sx;
