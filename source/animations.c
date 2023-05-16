@@ -21,7 +21,7 @@ void walk_animation(Sprite *sprite, int end_frame)
     int tpf = (s*s)/(8*8);
 
 	// update attribute 2
-	sprite->mem_addr->attr2 = ATTR2_PALBANK(pb) | (st + (tpf * cf));
+	sprite->mem_addr->attr2 = ATTR2_PALBANK(pb) | (st + (tpf * cf)) | ATTR2_PRIO(1);
 	cf = (cf + 1) % end_frame;
 
 	//update curr_frame
@@ -42,7 +42,7 @@ void turn_animation(Sprite *sprite)
 
 void player_skid_animation(Sprite *player)
 {
-    player->mem_addr->attr2 = PLAYER_FRAME4; // switch to frame 4
+    player->mem_addr->attr2 = ATTR2_PALBANK(PLAYER_PAL_BANK) | PLAYER_FRAME4 | ATTR2_PRIO(1);
     turn_animation(player); // flip the sprite        
 }
 

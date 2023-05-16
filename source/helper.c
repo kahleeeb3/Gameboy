@@ -151,7 +151,6 @@ void text_init()
         (fnDrawg)chr4c_drawg_b4cts_fast // b4cts renderer, asm version
     );
 
-	// set to be higher priority so sprite go behind
 
 	tte_init_con(); // Initialize the console I/O for text output
 }
