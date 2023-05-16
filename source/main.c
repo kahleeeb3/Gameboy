@@ -29,28 +29,12 @@ int squirrel_count = 0;
 
 int building_off_screen(Sprite *building)
 {
-	// first 4 buildings are in the top half
-	// of the map (x2 bc they're in halves) 
+	int bottom = building->y_pos + 64;
+	int right = building->x_pos + 128;
+	int top = building->y_pos;
 
-	// if building on top half of map
-	if(building->index < 8){
-		int bottom = building->y_pos + 64;
-		int right = building->x_pos + 128;
-		if( bottom < 0 ){
-			return 1;
-		}
-		if( right < 0 ){
-			return 1;
-		}
-	}
-
-	// bottom half of the map
-	else{
-		int top = building->y_pos;
-		if( top > SCREEN_HEIGHT ){
-			return 1;
-		}
-
+	if( (top > SCREEN_HEIGHT) || (bottom < 0) || ( right < 0) ){
+		return 1;
 	}
 
 	return 0;

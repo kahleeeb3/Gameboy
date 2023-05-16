@@ -949,8 +949,20 @@ void set_buildings_attributes(OBJ_ATTR *obj_buffer, OBJ_AFFINE *obj_aff_buffer, 
 		Sprite *newBuilding = mkSpriteStruct(&obj_buffer[sprite_num], BUILDINGS_SIZE, BUILDING_FRAME1 + (i*32), BUILDINGS_PAL_BANK, 1, x, y);
 		newBuilding->index = i; // set the index of the building
 		scale_sprite(newBuilding, &obj_aff_buffer[i], i, 2); // scale by a factor of 2
+
+		// determine if building should be hidden
+		int bottom = newBuilding->y_pos + 64;
+		int right = newBuilding->x_pos + 128;
+		int top = newBuilding->y_pos;
+
+		if( (top > SCREEN_HEIGHT) || (bottom < 0) || ( right < 0) ){
+			newBuilding->hidden = 1; // mark as hidden
+			obj_hide(newBuilding->mem_addr); // hide the building sprites
+		}
+
 		buildings[i] = newBuilding; // add to list of buildings
-		// obj_hide(newBuilding->mem_addr); // hide the building sprites
+
+		
 		
 	}
 	obj_aff_copy(obj_aff_mem, obj_aff_buffer, BUILDINGS_MAX);
