@@ -23,9 +23,33 @@ Sprite* players[PLAYER_MAX]; // array of player sprite pointers
 Sprite* apples[APPLE_MAX]; // array of apple sprite pointers
 Sprite* squirrels[SQUIRREL_MAX]; // array of squirrel sprite pointers
 Sprite* buildings[BUILDINGS_MAX]; // array of squirrel sprite pointers
+int building_health[8] = {100,100,100,100,100,100,100,100}; // all building have 100% health at first
 
 int player_score = 0;
 int squirrel_count = 0;
+
+void display_building_health()
+{
+	// these coords are just guesses rn
+	tte_printf("#{P:50,63}%d", building_health[0]);
+	tte_printf("#{P:86,51}%d", building_health[1]);
+	tte_printf("#{P:121,55}%d", building_health[2]);
+	tte_printf("#{P:155,54}%d", building_health[3]);
+	tte_printf("#{P:90,112}%d", building_health[4]);
+	tte_printf("#{P:121,112}%d", building_health[5]);
+	tte_printf("#{P:154,104}%d", building_health[6]);
+	tte_printf("#{P:168,79}%d", building_health[7]);
+}
+
+void display_score()
+{
+	tte_printf("#{P:2,0}Score: %d", player_score);
+	tte_printf("#{P:2,12}Squirrels: %d", squirrel_count);
+}
+
+void clear_text_display(){
+	tte_printf("#{es;}");
+}
 
 int building_off_screen(Sprite *building)
 {
@@ -39,7 +63,6 @@ int building_off_screen(Sprite *building)
 
 	return 0;
 }
-
 
 void finalize_sprite_positions(Sprite *player)
 {
@@ -437,8 +460,9 @@ void play_game()
 	while(1)
 	{
 		VBlankIntrWait(); // Wait for the VBLANK interrupt
-		tte_printf("#{es;P:2,0}Score: %d", player_score);
-		tte_printf("#{P:2,12}Squirrels: %d", squirrel_count);
+		
+		// clear_text_display();
+		display_score();
 
 		// slow player input a little
 		for (int i = 0; i < 4; i++)
@@ -451,11 +475,14 @@ void play_game()
 
 		if(key_is_down(KEY_R) && showing_map == 0){
 			REG_DISPCNT ^= DCNT_WIN0 | DCNT_WIN1; // enable window 0 and 1
+			display_building_health();
 			showing_map = 1;
 		}
 		if (key_is_up(KEY_R) && showing_map == 1){
 			REG_DISPCNT ^= DCNT_WIN0 | DCNT_WIN1; // enable window 0 and 1
 			showing_map = 0;
+			clear_text_display();
+			display_score();
 		}
 
 
@@ -501,6 +528,8 @@ void play_game()
 							squirrel_kill_animation(squirrel);
 							player_score++;
 							squirrel_count--;
+							clear_text_display();
+							display_score();
 						}
 
 					}
@@ -518,7 +547,7 @@ void play_game()
 					}
 				}
 				walk_animation(squirrel, 4);
-				move_towards(squirrel, player);
+				// move_towards(squirrel, player);
 			}
 
 		}
@@ -556,14 +585,34 @@ void window_init()
 	// REG_DISPCNT |= DCNT_WIN0 | DCNT_WIN1; // enable window 0 and 1
 
 	// define what goes in each window
-	REG_WININ= WININ_BUILD( 0, (WIN_OBJ | WIN_BG0| WIN_BG1) );
+	REG_WININ= WININ_BUILD( (WIN_BG0 | WIN_BG2) , (WIN_OBJ | WIN_BG0| WIN_BG1) );
 	REG_WINOUT= WINOUT_BUILD(WIN_BG0, 0);
 }
+
+void mini_map_init()
+{
+
+	// copy data over to registers
+	memcpy(pal_bg_mem+16, miniMapPal, miniMapPalLen);
+    memcpy(&tile_mem[1][0], miniMapTiles, miniMapTilesLen);
+    memcpy(&se_mem[26][0], miniMapMap, miniMapMapLen);
+
+	// change the palette used	
+	SCR_ENTRY *bg2_map= se_mem[26];
+	for(int i=0; i<1024; i++){
+		*bg2_map++ |= SE_PALBANK(1); // set to use palette 1
+	}
+
+    REG_BG2CNT = BG_REG_32x32 | BG_SBB(26)| BG_4BPP | BG_CBB(1);
+	REG_BG2CNT |= BG_PRIO(2); // set priority
+	REG_DISPCNT |= DCNT_BG2;
+}
+
 
 int main()
 {
 	oam_init(obj_buffer, 128); // initialize 128 sprites
-	REG_DISPCNT = DCNT_OBJ | DCNT_OBJ_1D; // Enable Objects & OBJ-VRAM as array
+	REG_DISPCNT = DCNT_MODE0 | DCNT_OBJ | DCNT_OBJ_1D; // Enable Objects & OBJ-VRAM as array
 
 	copy_sprite_data(); // move sprite data into obj_buffer
 
@@ -573,6 +622,7 @@ int main()
 	set_buildings_attributes(obj_buffer, obj_aff_buffer, buildings); // populate the buildings Sprite Struct pointer array
 
 	map = map_init(); // enable the map
+	mini_map_init(); // enable the mini map
 	text_init(); // enable the text display
 	srand(time(NULL)); // seed random number generator
 

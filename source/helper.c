@@ -147,7 +147,7 @@ void text_init()
     // 16x16 character cells using the Verdana 9 font with shading
 	 tte_init_chr4c(
         0,                              // BG number.
-        BG_CBB(2) | BG_SBB(10),         // BG control.
+        BG_CBB(2) | BG_SBB(7),         // BG control. (i just changed these a little until it worked?)
         0xF000,                         // Screen-entry base
         bytes2word(13, 15, 0, 0),       // Color attributes.
         CLR_WHITE,                      // Ink color
