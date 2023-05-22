@@ -86,13 +86,27 @@ int get_rel_diag_pos(Sprite *sprite)
 
 int collision(Sprite *s1, Sprite *s2, int hb)
 {
-    // center of sprite 1
-    int x1 = s1->x_pos + (s1->size/2);
-    int y1 = s1->y_pos + (s1->size/2);
+    
+	// center of sprite 1
+	int x1 = s1->x_pos + (s1->size/2) - 1;
+	int y1 = s1->y_pos + (s1->size/2) - 1;
 
-    // center of sprite 2
-    int x2 = s2->x_pos + (s2->size/2);
-    int y2 = s2->y_pos + (s2->size/2);
+	// center of sprite 2
+	int x2 = 0;
+	int y2 = 0;
+	
+	
+	// center of sprite 2 (non-buildings)
+	if(s2->size != -1){
+		x2 = s2->x_pos + (s2->size/2) - 1;
+		y2 = s2->y_pos + (s2->size/2) - 1;
+	}
+
+	// for buildings we need to do something different
+	else{
+		x2 = s2->x_pos + (64) - 1;
+		y2 = s2->y_pos;
+	}
 
     // if within x range
 	if( (x1 >= (x2-hb) ) && (x1 <= (x2+hb) ) ) 

@@ -525,6 +525,7 @@ void play_game()
 					Sprite *squirrel = squirrels[i];
 					if(squirrel->active == 1){
 						if( collision(apple, squirrel, SQUIRREL_HIT_BOX) == 1 ){
+							apple_kill_animation(apple);
 							squirrel_kill_animation(squirrel);
 							player_score++;
 							squirrel_count--;
@@ -537,7 +538,7 @@ void play_game()
 			}
 		}
 
-		// move each squirrel
+		// for each squirrel
 		for(int i=0; i<SQUIRREL_MAX; i++){
 			Sprite *squirrel = squirrels[i];
 			if(squirrel->active == 1){
@@ -547,7 +548,29 @@ void play_game()
 					}
 				}
 				walk_animation(squirrel, 4);
-				// move_towards(squirrel, player);
+				move_towards(squirrel, buildings[3]);
+
+				// if squirrel is hitting building
+				for( int i=0; i<BUILDINGS_MAX; i++){
+					if( i%2 ){
+						Sprite *building = buildings[i];
+						if( collision(squirrel, building, SQUIRREL_HIT_BOX) ){
+							// 1, 3, 5, 7, 9, 11, 13, 15
+							// 0, 1, 2, 3, 4, 5, 6, 7
+							building_health[i/2]--;
+							squirrel_bump_animation(squirrel, building);
+						}
+
+						if(building_health[i/2] < 0){
+							obj_hide(buildings[i]->mem_addr);
+							obj_hide(buildings[i-1]->mem_addr);
+						}
+
+
+					}
+				}
+
+
 			}
 
 		}
@@ -607,7 +630,6 @@ void mini_map_init()
 	REG_BG2CNT |= BG_PRIO(2); // set priority
 	REG_DISPCNT |= DCNT_BG2;
 }
-
 
 int main()
 {

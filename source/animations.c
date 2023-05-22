@@ -85,6 +85,64 @@ void apple_throw_init(Sprite *apple, Sprite *player)
     apple->dir_facing = player->dir_facing; // which way the apple is going
 }
 
+void squirrel_bump_animation(Sprite *squirrel, Sprite *building)
+{
+
+	int bump_factor = 15; // how big the bump is
+
+	/*
+	 * This will be very similar to the move towards
+	 * function. This is because we need to know in what
+	 * direction to move the squirrel backwards after it
+	 * bumps into a building.
+	 */
+	
+	// find squirrel center
+	int Sx = squirrel->x_pos + (squirrel->size/2) - 1;
+	int Sy = squirrel->y_pos + (squirrel->size/2) - 1;
+
+	int Bx = building->x_pos + (64) - 1;
+	int By = building->y_pos;
+
+	 // find x and y distance between them
+	int dx = Bx - Sx;
+	int dy = By - Sy;
+
+	// determine direction to move
+	int x_dir = 1; // pos or neg 1
+	int y_dir = 1; // pos or neg 1
+	if(dx < 0)
+		x_dir = -1;
+	if(dy < 0)
+		y_dir = -1;
+
+
+	// how much to move in what direction
+	int move_x;
+	int move_y;
+	u16 ratio = (x_dir*dx)/(y_dir*dy);
+
+	if(ratio > 1.25) // x>>y
+	{
+		move_x = 1;
+		move_y = 0;
+	}
+	if(ratio < 0.75) // y >> x
+	{
+		move_x = 0;
+		move_y = 1;
+	}
+	else if((ratio >= 0.75) && (ratio <= 1.25)) // x >> y
+	{
+		move_x = 1;
+		move_y = 1;
+	}
+
+	squirrel->x_pos -= bump_factor * x_dir * move_x; // update x location
+	squirrel->y_pos -= bump_factor * y_dir * move_y; // update y location
+
+}
+
 void move_towards(Sprite *sprite, Sprite *destination_sprite)
 {
     // find squirrel center
@@ -150,7 +208,6 @@ void move_towards(Sprite *sprite, Sprite *destination_sprite)
 
 	sprite->x_pos += x_dir * move_x; // update x location
 	sprite->y_pos += y_dir * move_y; // update y location
-	obj_set_pos(sprite->mem_addr, sprite->x_pos, sprite->y_pos);
 
 	// if headed right but facing left
 	if(x_dir == 1 && sprite->dir_facing == -1)

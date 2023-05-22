@@ -11,3 +11,4 @@ void apple_kill_animation(Sprite *apple);
 void spawn_squirrel(int index, Sprite** squirrels);
 void apple_throw_init(Sprite *apple, Sprite *player);
 void move_towards(Sprite *sprite, Sprite *destination_sprite);
+void squirrel_bump_animation(Sprite *squirrel, Sprite *building);
