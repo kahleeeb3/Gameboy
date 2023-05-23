@@ -8,6 +8,7 @@
 #include "animations.h"
 #include "helper.h"
 #include "loadingScreen.h"
+#include "mystery.h"
 
 #define MAP_MAX_X 270
 #define MAP_MAX_Y 260
@@ -686,6 +687,8 @@ void loading_screen_init()
 	oam_copy(oam_mem, obj_buffer, 1); // copy to object attribute memory
 
 }
+
+// https://ianfinlayson.net/class/cpsc305/notes/19-sound
 
 void loading_screen_display()
 {
