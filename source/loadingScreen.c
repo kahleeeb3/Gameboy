@@ -231,7 +231,7 @@ const unsigned int cp3gamesMap[512] __attribute__((aligned(4)))=
 
 const unsigned int cp3gamesPal[8] __attribute__((aligned(4)))=
 {
-	0x000003E6,0x7FFF1CE7,0x0C632108,0x04211084,0x00000000,0x00000000,0x00000000,0x00000000,
+	0x00000000,0x7FFF1CE7,0x0C632108,0x04211084,0x00000000,0x00000000,0x00000000,0x00000000,
 };
 
 

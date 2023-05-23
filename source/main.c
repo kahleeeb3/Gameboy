@@ -29,6 +29,27 @@ int building_health[8] = {100,100,100,100,100,100,100,100}; // all building have
 int player_score = 0;
 int squirrel_count = 0;
 
+void note_play(int note, int octave)
+{
+    REG_SND1FREQ = SFREQ_RESET | SND_RATE(note, octave);
+}
+
+void sound_init()
+{
+    // turn sound on
+    REG_SNDSTAT= SSTAT_ENABLE;
+    // snd1 on left/right ; both full volume
+    REG_SNDDMGCNT = SDMG_BUILD_LR(SDMG_SQR1, 7);
+    // DMG ratio to 100%
+    REG_SNDDSCNT= SDS_DMG100;
+
+    // no sweep
+    REG_SND1SWEEP= SSW_OFF;
+    // envelope: vol=12, decay, max step time (7) ; 50% duty
+    REG_SND1CNT= SSQR_ENV_BUILD(12, 0, 7) | SSQR_DUTY1_2;
+    REG_SND1FREQ= 0;
+}
+
 void display_building_health()
 {
 	// these coords are just guesses rn
@@ -449,6 +470,8 @@ void traverse(Sprite *player)
 
 void play_game()
 {	
+	REG_SND1CNT= SSQR_ENV_BUILD(12, 0, 1);
+	
 	Sprite *player = players[0]; // define the player
 	int showing_map = 0;
 
@@ -526,6 +549,7 @@ void play_game()
 					Sprite *squirrel = squirrels[i];
 					if(squirrel->active == 1){
 						if( collision(apple, squirrel, SQUIRREL_HIT_BOX) == 1 ){
+							note_play(NOTE_F, 1);
 							apple_kill_animation(apple);
 							squirrel_kill_animation(squirrel);
 							player_score++;
@@ -639,7 +663,6 @@ void loading_screen_init()
     memcpy(&tile_mem[0][0], cp3gamesTiles, cp3gamesTilesLen);
     memcpy(&se_mem[29][0], cp3gamesMap, cp3gamesMapLen);
 	REG_BG0CNT= BG_CBB(0) | BG_SBB(29) | BG_4BPP | BG_REG_32x32;
-	// REG_DISPCNT |= DCNT_BG0; // enable background 0
 	REG_BG0HOFS = 0; // horizontal offset to 0
 	REG_BG0VOFS = 0; // vertical offset to 0
 
@@ -648,7 +671,6 @@ void loading_screen_init()
     memcpy(&tile_mem[1][0], textTiles, textTilesLen);
     memcpy(&se_mem[30][0], textMap, textMapLen);
 	REG_BG1CNT = BG_REG_32x32 | BG_SBB(30)| BG_4BPP | BG_CBB(1);
-	// REG_DISPCNT |= DCNT_BG1; // enable background 1
 	REG_BG1HOFS = 0; // horizontal offset to 0
 	REG_BG1VOFS = 0; // vertical offset to 0
 	SCR_ENTRY *bg1_map= se_mem[30]; // pointer to screen entry 30
@@ -661,7 +683,6 @@ void loading_screen_init()
     memcpy(&tile_mem[2][0], loadingScreenTiles, loadingScreenTilesLen);
     memcpy(&se_mem[31][0], loadingScreenMap, loadingScreenMapLen);
 	REG_BG2CNT = BG_REG_32x32 | BG_SBB(31)| BG_4BPP | BG_CBB(2);
-	// REG_DISPCNT |= DCNT_BG2; // enable background 2
 	REG_BG2HOFS = 0; // horizontal offset to 0
 	REG_BG2VOFS = 0; // vertical offset to 0
 	SCR_ENTRY *bg2_map= se_mem[31]; // pointer to screen entry 31
@@ -685,27 +706,6 @@ void loading_screen_init()
 	obj_aff_copy(obj_aff_mem, obj_aff_buffer, 1); // copy to object affine memory
 	oam_copy(oam_mem, obj_buffer, 1); // copy to object attribute memory
 
-}
-
-void note_play(int note, int octave)
-{
-    REG_SND1FREQ = SFREQ_RESET | SND_RATE(note, octave);
-}
-
-void sound_init()
-{
-    // turn sound on
-    REG_SNDSTAT= SSTAT_ENABLE;
-    // snd1 on left/right ; both full volume
-    REG_SNDDMGCNT = SDMG_BUILD_LR(SDMG_SQR1, 7);
-    // DMG ratio to 100%
-    REG_SNDDSCNT= SDS_DMG100;
-
-    // no sweep
-    REG_SND1SWEEP= SSW_OFF;
-    // envelope: vol=12, decay, max step time (7) ; 50% duty
-    REG_SND1CNT= SSQR_ENV_BUILD(12, 0, 7) | SSQR_DUTY1_2;
-    REG_SND1FREQ= 0;
 }
 
 void loading_screen_display()
@@ -732,21 +732,18 @@ void loading_screen_display()
 
 	const u8 notes[12]= {NOTE_CIS, NOTE_D, NOTE_DIS, NOTE_E, NOTE_CIS, NOTE_D, NOTE_DIS, NOTE_E, NOTE_DIS, NOTE_D, NOTE_CIS, NOTE_C};
     const u8 lens[12]= { 2, 2, 2, 4, 2, 2, 2, 4, 2, 2, 2, 4 };
-	
+
 	// play music until key press
 	while(!key_was_down(KEY_START)){
 
 		for(int i=0; i< 12 ; i++)
 		{
-			// vid_vsync(); // wait for VBlank
-			key_poll();	 // poll which keys are activated
+			key_poll();
 			if(key_is_down(KEY_START)){
 				break;
 			}
-			else{
-				note_play(notes[i], -1);
-				VBlankIntrDelay(8*lens[i]);
-			}
+			note_play(notes[i], -1);
+			VBlankIntrDelay(8*lens[i]);
 		}
 		
 	}
@@ -770,9 +767,9 @@ int main()
 
     sound_init();
 	
-	loading_screen_init();
-	loading_screen_display();
-	
+	// loading_screen_init();
+	// loading_screen_display();
+
 	copy_sprite_data(); // move sprite data into obj_buffer
 
 	set_player_attributes(obj_buffer, players); // populate the player Sprite Struct
