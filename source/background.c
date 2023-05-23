@@ -1149,3 +1149,22 @@ Map *map_init()
 
 	return newMap;
 }
+
+void mini_map_init()
+{
+
+	// copy data over to registers
+	memcpy(pal_bg_mem+16, miniMapPal, miniMapPalLen);
+    memcpy(&tile_mem[1][0], miniMapTiles, miniMapTilesLen);
+    memcpy(&se_mem[26][0], miniMapMap, miniMapMapLen);
+
+	// change the palette used	
+	SCR_ENTRY *bg2_map= se_mem[26];
+	for(int i=0; i<1024; i++){
+		*bg2_map++ |= SE_PALBANK(1); // set to use palette 1
+	}
+
+    REG_BG2CNT = BG_REG_32x32 | BG_SBB(26)| BG_4BPP | BG_CBB(1);
+	REG_BG2CNT |= BG_PRIO(2); // set priority
+	// REG_DISPCNT |= DCNT_BG2;
+}

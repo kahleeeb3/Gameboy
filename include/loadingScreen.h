@@ -39,4 +39,7 @@ extern const unsigned int loadingScreenSquirrelTiles[512];
 #define loadingScreenSquirrelPalLen 32
 extern const unsigned int loadingScreenSquirrelPal[8];
 
+void loading_screen_display(OBJ_ATTR *obj_buffer);
+void loading_screen_init(OBJ_ATTR *obj_buffer, OBJ_AFFINE *obj_aff_buffer);
+
 #endif

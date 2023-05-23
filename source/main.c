@@ -9,49 +9,25 @@
 #include "helper.h"
 #include "loadingScreen.h"
 
-#define MAP_MAX_X 270
-#define MAP_MAX_Y 260
-#define PLAYER_MAX_X 208
-#define PLAYER_MIN_X 0
-#define PLAYER_MAX_Y 128
-#define PLAYER_MIN_Y 0
 
+/* GLOBAL VALUES */
 OBJ_ATTR obj_buffer[128]; // allocate space for 128 sprites
 OBJ_AFFINE *obj_aff_buffer= (OBJ_AFFINE*)obj_buffer; // buffer for object affine
-
 Map *map; // global pointer which give the map position
 Sprite* players[PLAYER_MAX]; // array of player sprite pointers
 Sprite* apples[APPLE_MAX]; // array of apple sprite pointers
 Sprite* squirrels[SQUIRREL_MAX]; // array of squirrel sprite pointers
 Sprite* buildings[BUILDINGS_MAX]; // array of squirrel sprite pointers
 int building_health[8] = {100,100,100,100,100,100,100,100}; // all building have 100% health at first
+int player_score = 0; // current player score
+int squirrel_count = 0; // number of squirrels left in round
 
-int player_score = 0;
-int squirrel_count = 0;
 
-void note_play(int note, int octave)
+void display_text()
 {
-    REG_SND1FREQ = SFREQ_RESET | SND_RATE(note, octave);
-}
+	tte_printf("#{es;P:2,0}Score: %d", player_score);
+	tte_printf("#{P:2,12}Squirrels: %d", squirrel_count);
 
-void sound_init()
-{
-    // turn sound on
-    REG_SNDSTAT= SSTAT_ENABLE;
-    // snd1 on left/right ; both full volume
-    REG_SNDDMGCNT = SDMG_BUILD_LR(SDMG_SQR1, 7);
-    // DMG ratio to 100%
-    REG_SNDDSCNT= SDS_DMG100;
-
-    // no sweep
-    REG_SND1SWEEP= SSW_OFF;
-    // envelope: vol=12, decay, max step time (7) ; 50% duty
-    REG_SND1CNT= SSQR_ENV_BUILD(12, 0, 7) | SSQR_DUTY1_2;
-    REG_SND1FREQ= 0;
-}
-
-void display_building_health()
-{
 	// these coords are just guesses rn
 	tte_printf("#{P:50,63}%d", building_health[0]);
 	tte_printf("#{P:86,51}%d", building_health[1]);
@@ -61,29 +37,7 @@ void display_building_health()
 	tte_printf("#{P:121,112}%d", building_health[5]);
 	tte_printf("#{P:154,104}%d", building_health[6]);
 	tte_printf("#{P:168,79}%d", building_health[7]);
-}
 
-void display_score()
-{
-	tte_printf("#{P:2,0}Score: %d", player_score);
-	tte_printf("#{P:2,12}Squirrels: %d", squirrel_count);
-}
-
-void clear_text_display(){
-	tte_printf("#{es;}");
-}
-
-int building_off_screen(Sprite *building)
-{
-	int bottom = building->y_pos + 64;
-	int right = building->x_pos + 128;
-	int top = building->y_pos;
-
-	if( (top > SCREEN_HEIGHT) || (bottom < 0) || ( right < 0) ){
-		return 1;
-	}
-
-	return 0;
 }
 
 void finalize_sprite_positions(Sprite *player)
@@ -470,10 +424,10 @@ void traverse(Sprite *player)
 
 void play_game()
 {	
-	REG_SND1CNT= SSQR_ENV_BUILD(12, 0, 1);
 	
 	Sprite *player = players[0]; // define the player
 	int showing_map = 0;
+	display_text();
 
 	// spawn all the squirrels
 	for( int i=0; i<SQUIRREL_MAX; i++){
@@ -483,10 +437,7 @@ void play_game()
 
 	while(1)
 	{
-		VBlankIntrWait(); // Wait for the VBLANK interrupt
 		
-		// clear_text_display();
-		display_score();
 
 		// slow player input a little
 		for (int i = 0; i < 4; i++)
@@ -498,18 +449,15 @@ void play_game()
 		traverse(player); // let player traverse map
 
 		if(key_is_down(KEY_R) && showing_map == 0){
-			REG_DISPCNT ^= DCNT_WIN0 | DCNT_WIN1; // enable window 0 and 1
-			display_building_health();
+			REG_DISPCNT ^= DCNT_WIN0; // enable window 0
+			display_text();
 			showing_map = 1;
 		}
 		if (key_is_up(KEY_R) && showing_map == 1){
-			REG_DISPCNT ^= DCNT_WIN0 | DCNT_WIN1; // enable window 0 and 1
+			REG_DISPCNT ^= DCNT_WIN0; // disable window 0
 			showing_map = 0;
-			clear_text_display();
-			display_score();
+			display_text();
 		}
-
-
 
 		// for each apple
 		for (int i = 0; i < APPLE_MAX; i++)
@@ -554,8 +502,7 @@ void play_game()
 							squirrel_kill_animation(squirrel);
 							player_score++;
 							squirrel_count--;
-							clear_text_display();
-							display_score();
+							display_text();
 						}
 
 					}
@@ -582,7 +529,9 @@ void play_game()
 						if( collision(squirrel, building, SQUIRREL_HIT_BOX) ){
 							// 1, 3, 5, 7, 9, 11, 13, 15
 							// 0, 1, 2, 3, 4, 5, 6, 7
+							note_play(NOTE_F, -2);
 							building_health[i/2]--;
+							display_text();
 							squirrel_bump_animation(squirrel, building);
 						}
 
@@ -606,157 +555,6 @@ void play_game()
 	}
 }
 
-void window_init()
-{
-    
-	/*
-	 *
-	 * Im really only going to use window 0 for now
-	 * this will be used for quick displaying the map
-	 */
-	
-	typedef struct tagRECT_U8 { u8 ll, tt, rr, bb; } ALIGN4 RECT_U8;
-
-	// define positions
-	RECT_U8 win[2]= 
-	{
-		{ 48, 8,  193,  152 },   // win0: where map will be displayed
-		{ 0, 0 ,SCREEN_WIDTH, SCREEN_HEIGHT }    // win1: the entire screen
-	};
-	
-	// set positions
-	REG_WIN0H= win[0].ll<<8 | win[0].rr;
-    REG_WIN1H= win[1].ll<<8 | win[1].rr;
-    REG_WIN0V= win[0].tt<<8 | win[0].bb;
-    REG_WIN1V= win[1].tt<<8 | win[1].bb;
-
-	// REG_DISPCNT |= DCNT_WIN0 | DCNT_WIN1; // enable window 0 and 1
-
-	// define what goes in each window
-	REG_WININ= WININ_BUILD( (WIN_BG0 | WIN_BG2) , (WIN_OBJ | WIN_BG0| WIN_BG1) );
-	REG_WINOUT= WINOUT_BUILD(WIN_BG0, 0);
-}
-
-void mini_map_init()
-{
-
-	// copy data over to registers
-	memcpy(pal_bg_mem+16, miniMapPal, miniMapPalLen);
-    memcpy(&tile_mem[1][0], miniMapTiles, miniMapTilesLen);
-    memcpy(&se_mem[26][0], miniMapMap, miniMapMapLen);
-
-	// change the palette used	
-	SCR_ENTRY *bg2_map= se_mem[26];
-	for(int i=0; i<1024; i++){
-		*bg2_map++ |= SE_PALBANK(1); // set to use palette 1
-	}
-
-    REG_BG2CNT = BG_REG_32x32 | BG_SBB(26)| BG_4BPP | BG_CBB(1);
-	REG_BG2CNT |= BG_PRIO(2); // set priority
-	// REG_DISPCNT |= DCNT_BG2;
-}
-
-void loading_screen_init()
-{
-	// (1) BG0: CP3 Logo
-	memcpy(pal_bg_mem, cp3gamesPal, cp3gamesPalLen);
-    memcpy(&tile_mem[0][0], cp3gamesTiles, cp3gamesTilesLen);
-    memcpy(&se_mem[29][0], cp3gamesMap, cp3gamesMapLen);
-	REG_BG0CNT= BG_CBB(0) | BG_SBB(29) | BG_4BPP | BG_REG_32x32;
-	REG_BG0HOFS = 0; // horizontal offset to 0
-	REG_BG0VOFS = 0; // vertical offset to 0
-
-	// (2) GB2: Start Text
-	memcpy(pal_bg_mem+16, textPal, textPalLen);
-    memcpy(&tile_mem[1][0], textTiles, textTilesLen);
-    memcpy(&se_mem[30][0], textMap, textMapLen);
-	REG_BG1CNT = BG_REG_32x32 | BG_SBB(30)| BG_4BPP | BG_CBB(1);
-	REG_BG1HOFS = 0; // horizontal offset to 0
-	REG_BG1VOFS = 0; // vertical offset to 0
-	SCR_ENTRY *bg1_map= se_mem[30]; // pointer to screen entry 30
-	for(int i=0; i<1024; i++){ // for each char block (32x32)
-		*bg1_map++ |= SE_PALBANK(1); // set to use palette 1
-	}
-
-	// (3) BG1: Wabash Map
-	memcpy(pal_bg_mem+32, loadingScreenPal, loadingScreenPalLen);
-    memcpy(&tile_mem[2][0], loadingScreenTiles, loadingScreenTilesLen);
-    memcpy(&se_mem[31][0], loadingScreenMap, loadingScreenMapLen);
-	REG_BG2CNT = BG_REG_32x32 | BG_SBB(31)| BG_4BPP | BG_CBB(2);
-	REG_BG2HOFS = 0; // horizontal offset to 0
-	REG_BG2VOFS = 0; // vertical offset to 0
-	SCR_ENTRY *bg2_map= se_mem[31]; // pointer to screen entry 31
-	for(int i=0; i<1024; i++){	// for each char block (32x32)
-		*bg2_map++ |= SE_PALBANK(2); // set to use palette 2
-	}
-
-	// (4) Evil Squirrel Sprite
-	memcpy(&tile_mem[4][0], loadingScreenSquirrelTiles, loadingScreenSquirrelTilesLen);
-	memcpy(pal_obj_mem, loadingScreenSquirrelPal, loadingScreenSquirrelPalLen);
-	OBJ_ATTR *lsSquirrel = &obj_buffer[0]; // pointer to first object in the object buffer
-	obj_set_attr(lsSquirrel, 
-		ATTR0_SQUARE | ATTR0_AFF | ATTR0_AFF_DBL, // square shape, affine enabled, double size
-		ATTR1_SIZE_64 | ATTR1_AFF_ID(0), // 64x64 size, affine transformation ID 0
-		0); // priority of the sprite to 0
-	OBJ_AFFINE *lsSquirrel_aff = &obj_aff_buffer[0]; // pointer to the first affine in the object affine buffer
-	obj_aff_identity(lsSquirrel_aff); // Initializes the affine transformation as an identity matrix
-	FIXED scale = (1<<8)/2; // scale by a factor of 2
-	obj_aff_scale(lsSquirrel_aff, scale, scale); // apply scale factor
-	obj_set_pos(lsSquirrel, 240, 33); // set position
-	obj_aff_copy(obj_aff_mem, obj_aff_buffer, 1); // copy to object affine memory
-	oam_copy(oam_mem, obj_buffer, 1); // copy to object attribute memory
-
-}
-
-void loading_screen_display()
-{
-	REG_DISPCNT |= DCNT_BG0; // enable background 0
-
-	// this is a trick for "sleep"
-	for(int i = 0; i < 200; i++){
-		vid_vsync(); // wait for VBlank
-	}
-
-	REG_DISPCNT ^= DCNT_BG0; // disable background 0
-	REG_DISPCNT |= DCNT_BG2; // enable background 2
-
-	for(int i = 240; i>0; i= i-2){
-
-		vid_vsync(); // wait for VBlank
-
-		obj_set_pos(&obj_buffer[0], i, 33); // set squirrel position
-		oam_copy(oam_mem, obj_buffer, 1); // copy to object attribute memory
-	}
-
-	REG_DISPCNT |= DCNT_BG1; // enable background 1
-
-	const u8 notes[12]= {NOTE_CIS, NOTE_D, NOTE_DIS, NOTE_E, NOTE_CIS, NOTE_D, NOTE_DIS, NOTE_E, NOTE_DIS, NOTE_D, NOTE_CIS, NOTE_C};
-    const u8 lens[12]= { 2, 2, 2, 4, 2, 2, 2, 4, 2, 2, 2, 4 };
-
-	// play music until key press
-	while(!key_was_down(KEY_START)){
-
-		for(int i=0; i< 12 ; i++)
-		{
-			key_poll();
-			if(key_is_down(KEY_START)){
-				break;
-			}
-			note_play(notes[i], -1);
-			VBlankIntrDelay(8*lens[i]);
-		}
-		
-	}
-
-	pal_bg_bank[0][0] = CLR_BLACK;
-	pal_bg_bank[1][0] = CLR_BLACK;
-	pal_bg_bank[2][0] = CLR_BLACK;
-	REG_DISPCNT ^= DCNT_BG1; // disable background 1
-	REG_DISPCNT ^= DCNT_BG2; // disable background 2
-	REG_DISPCNT ^= DCNT_OBJ; // disable objects
-	
-}
-
 int main()
 {
 	oam_init(obj_buffer, 128); // initialize 128 sprites
@@ -767,8 +565,8 @@ int main()
 
     sound_init();
 	
-	// loading_screen_init();
-	// loading_screen_display();
+	loading_screen_init(obj_buffer, obj_aff_buffer);
+	loading_screen_display(obj_buffer);
 
 	copy_sprite_data(); // move sprite data into obj_buffer
 
@@ -782,11 +580,11 @@ int main()
 	text_init(); // enable the text display
 
 
-	clear_text_display(); // clear text display
 	REG_DISPCNT |= DCNT_OBJ | DCNT_BG0 | DCNT_BG1| DCNT_BG2;
 
 
 	srand(time(NULL)); // seed random number generator
+	REG_SND1CNT= SSQR_ENV_BUILD(12, 0, 1); // update sound to be shorter
 
 	oam_copy(oam_mem, obj_buffer, 1 + APPLE_MAX + SQUIRREL_MAX + BUILDINGS_MAX); // update all sprites    
 

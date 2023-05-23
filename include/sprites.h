@@ -4,6 +4,14 @@
 #ifndef SPRITES
 #define SPRITES
 
+// boarders
+#define MAP_MAX_X 270
+#define MAP_MAX_Y 260
+#define PLAYER_MAX_X 208
+#define PLAYER_MIN_X 0
+#define PLAYER_MAX_Y 128
+#define PLAYER_MIN_Y 0
+
 // Define Max Quantities
 #define PLAYER_MAX      1
 #define APPLE_MAX 		5

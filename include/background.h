@@ -26,5 +26,6 @@ typedef struct{
 } Map;
 
 Map *map_init();
+void mini_map_init();
 
 #endif // MAP
