@@ -22,7 +22,6 @@ int building_health[8] = {100,100,100,100,100,100,100,100}; // all building have
 int player_score = 0; // current player score
 int squirrel_count = 0; // number of squirrels left in round
 
-
 void display_text()
 {
 	tte_printf("#{es;P:2,0}Score: %d", player_score);
@@ -422,18 +421,46 @@ void traverse(Sprite *player)
 
 }
 
+
+void set_squirrel_targets()
+{
+	// number of squirrels attacking {player, building 1, ..., building 9}
+	int building_quantities[8] = {2,2,0,0,0,0,0,0};
+	int player_quantity = 5;
+
+	// for each value in that list
+	for(int target_index = 0; target_index < 8; target_index++){
+
+		int selected_value = building_quantities[target_index]; // select the value
+		int building_index = (target_index * 2) + 1; // select target building index
+		
+		// count up from 0 to that value
+		for(int i=0; i< selected_value; i++){
+			Sprite *squirrel = squirrels[squirrel_count]; // select squirrel
+			squirrel->target = building_index; // assign it a target
+			spawn_squirrel(squirrel_count, squirrels); // spawn it in
+			squirrel_count++; // increase squirrel count
+		}
+	}
+
+	// assign squirrels to the player
+	for(int i =0; i<player_quantity; i++){
+		Sprite *squirrel = squirrels[squirrel_count]; // select squirrel
+		squirrel->target = -1; // assign it a target (-1 for player)
+		spawn_squirrel(squirrel_count, squirrels); // spawn it in
+		squirrel_count++; // increase squirrel count
+	}
+
+}
+
+
 void play_game()
 {	
 	
+	set_squirrel_targets(); // just 1 round for now
 	Sprite *player = players[0]; // define the player
 	int showing_map = 0;
 	display_text();
-
-	// spawn all the squirrels
-	for( int i=0; i<SQUIRREL_MAX; i++){
-		spawn_squirrel(i, squirrels);
-		squirrel_count++;
-	}
 
 	while(1)
 	{
@@ -520,15 +547,19 @@ void play_game()
 					}
 				}
 				walk_animation(squirrel, 4);
-				move_towards(squirrel, buildings[3]);
+				int squirrel_target = squirrel->target;
+				if (squirrel_target == -1){
+					move_towards(squirrel, player);
+				}
+				else{
+					move_towards(squirrel, buildings[squirrel_target]);
+				}
 
 				// if squirrel is hitting building
 				for( int i=0; i<BUILDINGS_MAX; i++){
 					if( i%2 ){
 						Sprite *building = buildings[i];
 						if( collision(squirrel, building, SQUIRREL_HIT_BOX) ){
-							// 1, 3, 5, 7, 9, 11, 13, 15
-							// 0, 1, 2, 3, 4, 5, 6, 7
 							note_play(NOTE_F, -2);
 							building_health[i/2]--;
 							display_text();
@@ -565,8 +596,8 @@ int main()
 
     sound_init();
 	
-	loading_screen_init(obj_buffer, obj_aff_buffer);
-	loading_screen_display(obj_buffer);
+	// loading_screen_init(obj_buffer, obj_aff_buffer);
+	// loading_screen_display(obj_buffer);
 
 	copy_sprite_data(); // move sprite data into obj_buffer
 
@@ -580,10 +611,10 @@ int main()
 	text_init(); // enable the text display
 
 
+	// enable objs and backgrounds
 	REG_DISPCNT |= DCNT_OBJ | DCNT_BG0 | DCNT_BG1| DCNT_BG2;
 
 
-	srand(time(NULL)); // seed random number generator
 	REG_SND1CNT= SSQR_ENV_BUILD(12, 0, 1); // update sound to be shorter
 
 	oam_copy(oam_mem, obj_buffer, 1 + APPLE_MAX + SQUIRREL_MAX + BUILDINGS_MAX); // update all sprites    

@@ -15,7 +15,7 @@
 // Define Max Quantities
 #define PLAYER_MAX      1
 #define APPLE_MAX 		5
-#define SQUIRREL_MAX	5
+#define SQUIRREL_MAX	50
 #define BUILDINGS_MAX 	16
 
 // These will be moved to input later
@@ -80,6 +80,7 @@ typedef struct{
 	int x_pos; // current x position
 	int y_pos; // current y position
 	int index; // which sprite occurrence this is (for duplicate sprites)
+	int target; // which sprite are they targeting (for squirrels only)
 }Sprite;
 
 void copy_tiles(const unsigned int *tileSet, int tileSetStart, int tileSetLen);
