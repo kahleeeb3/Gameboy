@@ -1137,7 +1137,7 @@ Map *map_init()
 	REG_BG1CNT= BG_CBB(0) | BG_SBB(28) | BG_4BPP | BG_REG_64x64;
 	REG_BG1CNT |= BG_PRIO(1); // set background priority
 
-	REG_DISPCNT |= DCNT_BG1; // enable background 1
+	// REG_DISPCNT |= DCNT_BG1; // enable background 1
 
     // the center of the map is roughly (150, 160)
 	// map boundaries are x->{0, 270}, y->{0, 260}

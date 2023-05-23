@@ -153,9 +153,9 @@ void text_init()
 	 * as possible here.
 	 */
 
-	REG_DISPCNT |= DCNT_BG0; // enbale background 0
-	irq_init(NULL); // Initialize the interrupt system with no callback function
-    irq_add(II_VBLANK, NULL); // Add a VBLANK interrupt with no callback function
+	// REG_DISPCNT |= DCNT_BG0; // enable background 0
+	// irq_init(NULL); // Initialize the interrupt system with no callback function
+    // irq_add(II_VBLANK, NULL); // Add a VBLANK interrupt with no callback function
 
 	// Initialize the TTE library for displaying text in mode 4 (4bpp) with
     // 16x16 character cells using the Verdana 9 font with shading

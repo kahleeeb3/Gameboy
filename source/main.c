@@ -8,7 +8,6 @@
 #include "animations.h"
 #include "helper.h"
 #include "loadingScreen.h"
-#include "mystery.h"
 
 #define MAP_MAX_X 270
 #define MAP_MAX_Y 260
@@ -449,7 +448,7 @@ void traverse(Sprite *player)
 }
 
 void play_game()
-{
+{	
 	Sprite *player = players[0]; // define the player
 	int showing_map = 0;
 
@@ -630,7 +629,7 @@ void mini_map_init()
 
     REG_BG2CNT = BG_REG_32x32 | BG_SBB(26)| BG_4BPP | BG_CBB(1);
 	REG_BG2CNT |= BG_PRIO(2); // set priority
-	REG_DISPCNT |= DCNT_BG2;
+	// REG_DISPCNT |= DCNT_BG2;
 }
 
 void loading_screen_init()
@@ -688,7 +687,26 @@ void loading_screen_init()
 
 }
 
-// https://ianfinlayson.net/class/cpsc305/notes/19-sound
+void note_play(int note, int octave)
+{
+    REG_SND1FREQ = SFREQ_RESET | SND_RATE(note, octave);
+}
+
+void sound_init()
+{
+    // turn sound on
+    REG_SNDSTAT= SSTAT_ENABLE;
+    // snd1 on left/right ; both full volume
+    REG_SNDDMGCNT = SDMG_BUILD_LR(SDMG_SQR1, 7);
+    // DMG ratio to 100%
+    REG_SNDDSCNT= SDS_DMG100;
+
+    // no sweep
+    REG_SND1SWEEP= SSW_OFF;
+    // envelope: vol=12, decay, max step time (7) ; 50% duty
+    REG_SND1CNT= SSQR_ENV_BUILD(12, 0, 7) | SSQR_DUTY1_2;
+    REG_SND1FREQ= 0;
+}
 
 void loading_screen_display()
 {
@@ -712,14 +730,30 @@ void loading_screen_display()
 
 	REG_DISPCNT |= DCNT_BG1; // enable background 1
 
-	while(1){
-		vid_vsync(); // wait for VBlank
-		key_poll();	 // poll which keys are activated
-		if(key_is_down(KEY_START)){
-			break;
+	const u8 notes[12]= {NOTE_CIS, NOTE_D, NOTE_DIS, NOTE_E, NOTE_CIS, NOTE_D, NOTE_DIS, NOTE_E, NOTE_DIS, NOTE_D, NOTE_CIS, NOTE_C};
+    const u8 lens[12]= { 2, 2, 2, 4, 2, 2, 2, 4, 2, 2, 2, 4 };
+	
+	// play music until key press
+	while(!key_was_down(KEY_START)){
+
+		for(int i=0; i< 12 ; i++)
+		{
+			// vid_vsync(); // wait for VBlank
+			key_poll();	 // poll which keys are activated
+			if(key_is_down(KEY_START)){
+				break;
+			}
+			else{
+				note_play(notes[i], -1);
+				VBlankIntrDelay(8*lens[i]);
+			}
 		}
+		
 	}
 
+	pal_bg_bank[0][0] = CLR_BLACK;
+	pal_bg_bank[1][0] = CLR_BLACK;
+	pal_bg_bank[2][0] = CLR_BLACK;
 	REG_DISPCNT ^= DCNT_BG1; // disable background 1
 	REG_DISPCNT ^= DCNT_BG2; // disable background 2
 	REG_DISPCNT ^= DCNT_OBJ; // disable objects
@@ -731,10 +765,14 @@ int main()
 	oam_init(obj_buffer, 128); // initialize 128 sprites
 	REG_DISPCNT = DCNT_MODE0 | DCNT_OBJ | DCNT_OBJ_1D; // Enable Objects & OBJ-VRAM as array
 
+	irq_init(NULL);
+    irq_add(II_VBLANK, NULL);
+
+    sound_init();
+	
 	loading_screen_init();
 	loading_screen_display();
 	
-	/*
 	copy_sprite_data(); // move sprite data into obj_buffer
 
 	set_player_attributes(obj_buffer, players); // populate the player Sprite Struct
@@ -745,6 +783,12 @@ int main()
 	map = map_init(); // enable the map
 	mini_map_init(); // enable the mini map
 	text_init(); // enable the text display
+
+
+	clear_text_display(); // clear text display
+	REG_DISPCNT |= DCNT_OBJ | DCNT_BG0 | DCNT_BG1| DCNT_BG2;
+
+
 	srand(time(NULL)); // seed random number generator
 
 	oam_copy(oam_mem, obj_buffer, 1 + APPLE_MAX + SQUIRREL_MAX + BUILDINGS_MAX); // update all sprites    
@@ -752,7 +796,6 @@ int main()
 	window_init();
 	
 	play_game();
-	*/
 
 	while(1);
 
