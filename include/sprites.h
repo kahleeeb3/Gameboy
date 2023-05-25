@@ -47,7 +47,7 @@ extern Sprite* apples[APPLE_MAX]; // array of building sprite pointers
 extern Sprite* squirrels[SQUIRREL_MAX]; // array of building sprite pointers
 extern Sprite* buildings[BUILDINGS_MAX]; // array of building sprite pointers
 
-void copy_sprite_data();
+void sprites_init();
 void set_player_attributes();
 void set_apple_attributes();
 void set_squirrel_attributes();

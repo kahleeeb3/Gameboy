@@ -40,5 +40,11 @@ extern const unsigned int center1Tiles[256];
 extern const unsigned int center2Tiles[256];
 extern const unsigned int buildingsPal[8];
 
+// LOADING SCREEN SQUIRREL
+#define loadingScreenSquirrelTilesLen 2048
+#define loadingScreenSquirrelPalLen 32
+extern const unsigned int loadingScreenSquirrelTiles[512];
+extern const unsigned int loadingScreenSquirrelPal[8];
+
 
 #endif /* SPRITESDATA */

@@ -11,7 +11,7 @@ Sprite* squirrels[SQUIRREL_MAX]; // array of building sprite pointers
 Sprite* buildings[BUILDINGS_MAX]; // array of building sprite pointers
 
 
-void copy_sprite_data()
+void sprites_init()
 {
     oam_init(obj_buffer, 128); // initialize 128 sprites
 
