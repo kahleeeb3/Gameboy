@@ -59,12 +59,17 @@ void apple_kill_animation(Sprite *apple)
 	apple->y_pos = 24;
 }
 
-void spawn_squirrel(int index, Sprite** squirrels)
+void spawn_squirrel(int index, Sprite** squirrels, Sprite** buildings)
 {
-	// mall center boundaries are x={-64, 240}, y={25, 115}
+	// the squirrels are going to have to spawn relative to some
+	// stationary object on the background (a building)
+	// ill simply choose the bottom half of hays for this
+	int bx = buildings[3]->x_pos; // building x pos
+	int by = buildings[3]->y_pos; // building y pos
+	
 	Sprite *squirrel = squirrels[index];
-	int x = qran_range(-64, 240); // choose some x pos
-	int y = qran_range(25, 115); // choose some y pos
+	int x = qran_range(bx, bx+310); // choose some x pos
+	int y = qran_range(by+85, by+170); // choose some y pos
 	squirrel->x_pos = x;
 	squirrel->y_pos = y;
 	obj_unhide(squirrel->mem_addr, ATTR0_4BPP);
@@ -87,7 +92,7 @@ void apple_throw_init(Sprite *apple, Sprite *player)
 void squirrel_bump_animation(Sprite *squirrel, Sprite *building)
 {
 
-	int bump_factor = 15; // how big the bump is
+	int bump_factor = 20; // how big the bump is
 
 	/*
 	 * This will be very similar to the move towards

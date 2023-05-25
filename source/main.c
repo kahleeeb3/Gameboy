@@ -21,10 +21,22 @@ Sprite* buildings[BUILDINGS_MAX]; // array of squirrel sprite pointers
 int building_health[8] = {100,100,100,100,100,100,100,100}; // all building have 100% health at first
 int player_score = 0; // current player score
 int squirrel_count = 0; // number of squirrels left in round
+int round_number = 1; // current round number
+int round_countdown = 1; // bool for if round countdown is beginning
+int round_cooldown = 3; // amount of time before round start
 
-void display_text()
-{
-	tte_printf("#{es;P:2,0}Score: %d", player_score);
+
+void update_scores(int clear)
+{	
+	if(clear){
+		tte_printf("#{es;}");
+	}
+	
+	// round number
+	tte_printf("#{P:99,0}ROUND %d", round_number);
+
+	// score and squirrel count
+	tte_printf("#{P:2,0}Score: %d", player_score);
 	tte_printf("#{P:2,12}Squirrels: %d", squirrel_count);
 
 	// these coords are just guesses rn
@@ -421,12 +433,22 @@ void traverse(Sprite *player)
 
 }
 
-
-void set_squirrel_targets()
+void set_squirrel_targets(int random, int player_quantity, int building_quantities[8])
 {
 	// number of squirrels attacking {player, building 1, ..., building 9}
-	int building_quantities[8] = {2,2,0,0,0,0,0,0};
-	int player_quantity = 5;
+	// int building_quantities[8] = {2,2,0,0,0,0,0,0};
+	// int player_quantity = 5;
+
+	// if player would like to random generate
+	// suggest for later level
+	if(random){
+		player_quantity = qran_range(0, 5);
+
+		for(int i = 0; i<8; i++){
+			building_quantities[i] = qran_range(0, 5);
+		}
+	}
+	
 
 	// for each value in that list
 	for(int target_index = 0; target_index < 8; target_index++){
@@ -438,8 +460,9 @@ void set_squirrel_targets()
 		for(int i=0; i< selected_value; i++){
 			Sprite *squirrel = squirrels[squirrel_count]; // select squirrel
 			squirrel->target = building_index; // assign it a target
-			spawn_squirrel(squirrel_count, squirrels); // spawn it in
+			spawn_squirrel(squirrel_count, squirrels, buildings); // spawn it in
 			squirrel_count++; // increase squirrel count
+			squirrel->pal_bank = 2; // change squirrel color
 		}
 	}
 
@@ -447,24 +470,70 @@ void set_squirrel_targets()
 	for(int i =0; i<player_quantity; i++){
 		Sprite *squirrel = squirrels[squirrel_count]; // select squirrel
 		squirrel->target = -1; // assign it a target (-1 for player)
-		spawn_squirrel(squirrel_count, squirrels); // spawn it in
+		spawn_squirrel(squirrel_count, squirrels, buildings); // spawn it in
 		squirrel_count++; // increase squirrel count
+		squirrel->pal_bank = 3; // set squirrel color
 	}
 
+}
+
+void set_round_data(int round_number)
+{
+	switch (round_number)
+	{
+	case 1: // one squirrel attack player
+		set_squirrel_targets(0, 1, (int[]){0,0,0,0,0,0,0,0});
+		break;
+	case 2: // one squirrel attack building
+		set_squirrel_targets(0, 0, (int[]){0,0,1,0,0,0,0,0});
+		break;
+	case 3: // one on player, one on building
+		set_squirrel_targets(0, 1, (int[]){1,0,0,0,0,0,0,0});
+		break;
+	case 4: // one on everything
+		set_squirrel_targets(0, 1, (int[]){1,1,1,1,1,1,1,1});
+		break;
+	default:
+		set_squirrel_targets(1, 0, (int[]){0,0,0,0,0,0,0,0});
+		break;
+	}
+}
+
+
+u32 init_timer()
+{
+	// Overflow every ~1 second:
+    // 0x4000 ticks @ FREQ_1024
+    REG_TM2D = -0x4000;          // 0x4000 ticks till overflow
+    REG_TM2CNT = TM_FREQ_1024;   // we're using the 1024 cycle timer
+
+    REG_TM2CNT |= TM_ENABLE;
+    REG_TM3CNT = TM_ENABLE | TM_CASCADE;
+	u32 sec = -1;
+
+	return sec;
+
+}
+
+u32 restart_timer()
+{
+	u32 sec = -1;
+	REG_TM3CNT = 0;
+	REG_TM3CNT = TM_ENABLE | TM_CASCADE;
+	return sec;
 }
 
 
 void play_game()
 {	
-	
-	set_squirrel_targets(); // just 1 round for now
+		
 	Sprite *player = players[0]; // define the player
 	int showing_map = 0;
-	display_text();
+	update_scores(1);
+	u32 sec = init_timer(); // start timer
 
 	while(1)
 	{
-		
 
 		// slow player input a little
 		for (int i = 0; i < 4; i++)
@@ -473,17 +542,45 @@ void play_game()
 			key_poll();	 // poll which keys are activated
 		}
 
+		// Check if the current time has changed
+        if (REG_TM3D != sec)
+        {
+            
+            sec = REG_TM3D; // Update the stored time
+            // u32 hours = sec / 3600; // Convert the time to hours
+            // int minutes = (sec % 3600) / 60; // Convert the time to minutes
+            // int seconds = sec % 60; // Convert the time to seconds
+			if(round_countdown && round_cooldown >= 0){
+				tte_printf("#{es;P:117,12}%d", round_cooldown);
+				update_scores(0);
+				round_cooldown--;
+			}
+			else if(round_countdown && round_cooldown == -1){
+				round_countdown = 0; // no longer count down
+				round_cooldown = 3; // reset cooldown
+				set_round_data(round_number); // set number of squirrels to spawn
+				// set_round_data(12); // choose random always
+				// set_squirrel_targets(0, 0, (int[]){1,1,1,1,1,1,1,1}); // 1 squirrel on each
+				update_scores(1); // update display
+			}
+			else if(squirrel_count == 0 ){
+				round_number++; // increase round number
+				round_countdown = 1; // turn countdown on
+			}
+
+		}
+
 		traverse(player); // let player traverse map
 
 		if(key_is_down(KEY_R) && showing_map == 0){
 			REG_DISPCNT ^= DCNT_WIN0; // enable window 0
-			display_text();
+			update_scores(1);
 			showing_map = 1;
 		}
 		if (key_is_up(KEY_R) && showing_map == 1){
 			REG_DISPCNT ^= DCNT_WIN0; // disable window 0
 			showing_map = 0;
-			display_text();
+			update_scores(1);
 		}
 
 		// for each apple
@@ -523,13 +620,13 @@ void play_game()
 				{
 					Sprite *squirrel = squirrels[i];
 					if(squirrel->active == 1){
-						if( collision(apple, squirrel, SQUIRREL_HIT_BOX) == 1 ){
+						if( collision(apple, squirrel, SQUIRREL_HIT_BOX, SQUIRREL_HIT_BOX) == 1 ){
 							note_play(NOTE_F, 1);
 							apple_kill_animation(apple);
 							squirrel_kill_animation(squirrel);
 							player_score++;
 							squirrel_count--;
-							display_text();
+							update_scores(1);
 						}
 
 					}
@@ -541,6 +638,15 @@ void play_game()
 		for(int i=0; i<SQUIRREL_MAX; i++){
 			Sprite *squirrel = squirrels[i];
 			if(squirrel->active == 1){
+
+				// if squirrel hits player & target is player
+				if(collision(squirrel, player, PLAYER_HIT_BOX, PLAYER_HIT_BOX) && squirrel->target == -1){
+					player_score--;
+					// squirrel_bump_animation(squirrel, player);
+					update_scores(1);
+
+				}
+
 				if(squirrel->hidden == 1){
 					if(off_screen(squirrel) == 0){
 						obj_unhide(squirrel->mem_addr, ATTR1_SIZE_16);
@@ -559,16 +665,22 @@ void play_game()
 				for( int i=0; i<BUILDINGS_MAX; i++){
 					if( i%2 ){
 						Sprite *building = buildings[i];
-						if( collision(squirrel, building, SQUIRREL_HIT_BOX) ){
+
+						if( collision(squirrel, building, building->hbx, building->hby) ){
 							note_play(NOTE_F, -2);
 							building_health[i/2]--;
-							display_text();
+							update_scores(1);
 							squirrel_bump_animation(squirrel, building);
 						}
 
+						// if building dies
 						if(building_health[i/2] < 0){
 							obj_hide(buildings[i]->mem_addr);
 							obj_hide(buildings[i-1]->mem_addr);
+							if(squirrel->target == i){
+								squirrel->target = -1; // attack player
+								squirrel->pal_bank = 3; // change color
+							}
 						}
 
 
@@ -596,8 +708,8 @@ int main()
 
     sound_init();
 	
-	// loading_screen_init(obj_buffer, obj_aff_buffer);
-	// loading_screen_display(obj_buffer);
+	loading_screen_init(obj_buffer, obj_aff_buffer);
+	loading_screen_display(obj_buffer);
 
 	copy_sprite_data(); // move sprite data into obj_buffer
 

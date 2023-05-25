@@ -20,6 +20,11 @@ const unsigned int squirrelPal[8] __attribute__((aligned(4)))=
 	0x09110000,0x1575469A,0x4ABA18C6,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
 };
 
+const unsigned int squirrel2Pal[8] __attribute__((aligned(4)))=
+{
+	0x7D110000,0x7D757E9A,0x4ABA18C6,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
+};
+
 const unsigned int buildingsPal[8] __attribute__((aligned(4)))=
 {
 	0x2D690000,0x5AB518A3,0x20E7460F,0x39AC6739,0x67164E4F,0x252841ED,0x14A4635B,0x5EF75290,
@@ -837,10 +842,11 @@ void copy_sprite_data()
 	
 
 	// copy palette data to memory
-	copy_palette(playerPal, PLAYER_PAL_OFFSET, PalLen); // player palette
-	copy_palette(applePal, APPLE_PAL_OFFSET, PalLen); // apple palette
-	copy_palette(squirrelPal, SQUIRREL_PAL_OFFSET, PalLen); // squirrel palette
-	copy_palette(buildingsPal, BUILDINGS_PAL_OFFSET, PalLen); // building palette
+	copy_palette(playerPal, 0, PalLen); // player palette
+	copy_palette(applePal, 16 , PalLen); // apple palette
+	copy_palette(squirrelPal, 32, PalLen); // squirrel palette
+	copy_palette(squirrel2Pal, 48, PalLen); // squirrel palette
+	copy_palette(buildingsPal, 64, PalLen); // building palette
 }
 
 void scale_sprite(Sprite *sprite, OBJ_AFFINE *obj_aff_buffer_location, int obj_affine_num, int scale_factor)
@@ -917,8 +923,7 @@ void set_squirrels_attributes(OBJ_ATTR *obj_buffer, Sprite** squirrels)
 void set_buildings_attributes(OBJ_ATTR *obj_buffer, OBJ_AFFINE *obj_aff_buffer, Sprite** buildings)
 {
 	
-	// array of building locations = {detchon, hays, center, baxter, lilly, sparks, goodrich, chapel}
-
+	// array of building locations
 	int building_positions[8][2] = {
 		{-183, -71}, 	// detchon
 		{-70, -128}, 	// hays
@@ -929,6 +934,18 @@ void set_buildings_attributes(OBJ_ATTR *obj_buffer, OBJ_AFFINE *obj_aff_buffer, 
 		{188, 96}, 		// goodrich
 		{248, 3} 		// chapel
 		};
+
+	// array of building hit box sizes {hbx, hby}
+	int building_hit_boxes[8][2] = {
+		{38, 32}, 		// detchon
+		{64, 50}, 		// hays
+		{65, 26}, 		// center
+		{58, 46}, 		// baxter
+		{37, 63}, 		// lilly
+		{38, 38}, 		// sparks
+		{37, 22}, 		// goodrich
+		{41, 22} 		// chapel
+		};
 	
 	int building_num = 0; // track index in position array
 	
@@ -938,6 +955,8 @@ void set_buildings_attributes(OBJ_ATTR *obj_buffer, OBJ_AFFINE *obj_aff_buffer, 
 
 		int x = building_positions[building_num][0];
 		int y = building_positions[building_num][1];
+		int hbx = building_hit_boxes[building_num][0];
+		int hby = building_hit_boxes[building_num][1];
 
 		// if second half of the sprite
 		if( (i%2) != 0){
@@ -959,7 +978,8 @@ void set_buildings_attributes(OBJ_ATTR *obj_buffer, OBJ_AFFINE *obj_aff_buffer, 
 			newBuilding->hidden = 1; // mark as hidden
 			obj_hide(newBuilding->mem_addr); // hide the building sprites
 		}
-
+		newBuilding->hbx = hbx;
+		newBuilding->hby = hby;
 		buildings[i] = newBuilding; // add to list of buildings
 
 		

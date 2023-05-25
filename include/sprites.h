@@ -47,7 +47,7 @@
 #define PLAYER_PAL_BANK 		0
 #define APPLE_PAL_BANK			1
 #define SQUIRREL_PAL_BANK 		2
-#define BUILDINGS_PAL_BANK 		3
+#define BUILDINGS_PAL_BANK 		4
 
 
 // Define Sprite Sizes
@@ -81,6 +81,8 @@ typedef struct{
 	int y_pos; // current y position
 	int index; // which sprite occurrence this is (for duplicate sprites)
 	int target; // which sprite are they targeting (for squirrels only)
+	int hbx; // hit box x size
+	int hby; // hit box y size
 }Sprite;
 
 void copy_tiles(const unsigned int *tileSet, int tileSetStart, int tileSetLen);

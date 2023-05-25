@@ -84,7 +84,7 @@ int get_rel_diag_pos(Sprite *sprite)
 
 }
 
-int collision(Sprite *s1, Sprite *s2, int hb)
+int collision(Sprite *s1, Sprite *s2, int hbx, int hby)
 {
     
 	// center of sprite 1
@@ -109,10 +109,10 @@ int collision(Sprite *s1, Sprite *s2, int hb)
 	}
 
     // if within x range
-	if( (x1 >= (x2-hb) ) && (x1 <= (x2+hb) ) ) 
+	if( (x1 >= (x2-hbx) ) && (x1 <= (x2+hbx) ) ) 
 	{
 		// if within y range
-		if( (y1 >= (y2-hb) ) && (y1 <= (y2+hb) ) )
+		if( (y1 >= (y2-hby) ) && (y1 <= (y2+hby) ) )
 		{
 			return 1; // hit success
 		}
