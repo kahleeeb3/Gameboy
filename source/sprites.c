@@ -10,6 +10,14 @@ Sprite* apples[APPLE_MAX]; // array of building sprite pointers
 Sprite* squirrels[SQUIRREL_MAX]; // array of building sprite pointers
 Sprite* buildings[BUILDINGS_MAX]; // array of building sprite pointers
 
+// global score values
+int round_number = 1; // current round number
+float player_score = 0; // players score
+int squirrel_count = 0; // number of squirrels still alive
+float building_health[8] = {100,100,100,100,100,100,100,100}; // health for each building
+int minutes = 0; // minutes passed since starting game
+int seconds = 0; // seconds passed since starting game
+
 
 void sprites_init()
 {
@@ -91,8 +99,7 @@ Sprite *mkSpriteStruct(int ob_index, int size, int tile_id, int pal_bank, int x,
 		newSprite->mem_addr->attr1 = ATTR1_SIZE_16;
 	else if(size == 8)
 		newSprite->mem_addr->attr1 = ATTR1_SIZE_8;
-	else if(size == -1)
-	{
+	else if(size == -1){
 		// this is reserved for buildings
 		newSprite->mem_addr->attr0 |= ATTR0_WIDE;
 		newSprite->mem_addr->attr1 = ATTR1_SIZE_64x32;
@@ -234,4 +241,34 @@ void set_building_attributes()
 
     }
     obj_aff_copy(obj_aff_mem, obj_aff_buffer, BUILDINGS_MAX);
+}
+
+void finalize_sprite_positions()
+{
+	// set the updated position for player
+	obj_set_pos(player->mem_addr, player->x_pos, player->y_pos); // set player position
+
+	// set the updated position for all active apples
+	for (int i = 0; i < APPLE_MAX; i++){
+		Sprite *apple = apples[i];
+		obj_set_pos(apple->mem_addr, apple->x_pos, apple->y_pos);
+	}
+	
+	// set the updated position for all active squirrels
+	for(int i=0; i<SQUIRREL_MAX; i++){
+		Sprite *squirrel = squirrels[i];
+		if(squirrel->active == 1){
+			obj_set_pos(squirrel->mem_addr, squirrel->x_pos, squirrel->y_pos);
+
+		}
+	}
+
+	// set the updated position for all active buildings
+	for(int i=0; i<BUILDINGS_MAX; i++){
+		Sprite *building = buildings[i];
+		if(building->active == 1){
+			obj_set_pos(building->mem_addr, building->x_pos, building->y_pos);
+		}
+	}
+
 }

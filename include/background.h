@@ -8,6 +8,7 @@ typedef struct{
 
 extern Map *map; // global pointer which give the map position
 void text_init();
+void update_text_display();
 void map_init();
 void mini_map_init();
 void loading_screen_init();

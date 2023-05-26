@@ -1,6 +1,7 @@
 #include <tonc.h> // GBA library
 #include <string.h> // for memcpy
 #include <stdlib.h> // for malloc
+#include "helper.h"
 #include "sprites.h"
 #include "spriteData.h"
 #include "background.h"
@@ -39,6 +40,32 @@ void text_init()
 
 
 	tte_init_con(); // Initialize the console I/O for text output
+	tte_printf("#{es;P:0,0}"); // clear the screen
+
+}
+
+void update_text_display()
+{
+	// score and squirrel count
+	tte_printf("#{es;P:2,0}Score: %d", (int)player_score);
+	tte_printf("#{P:2,12}Squirrels: %d", squirrel_count);
+
+	// round number
+	tte_printf("#{P:99,0}ROUND %d", round_number);
+
+	// timer
+	tte_printf("#{P:210,0}%02d:%02d", minutes, seconds);
+
+	// building health
+	// these coords are just guesses rn
+	tte_printf("#{P:50,63}%d", (int)building_health[0]);
+	tte_printf("#{P:86,51}%d", (int)building_health[1]);
+	tte_printf("#{P:121,55}%d", (int)building_health[2]);
+	tte_printf("#{P:155,54}%d", (int)building_health[3]);
+	tte_printf("#{P:90,112}%d", (int)building_health[4]);
+	tte_printf("#{P:121,112}%d", (int)building_health[5]);
+	tte_printf("#{P:154,104}%d", (int)building_health[6]);
+	tte_printf("#{P:168,79}%d", (int)building_health[7]);
 }
 
 void map_init()
@@ -156,20 +183,19 @@ void loading_screen_display()
 
 	REG_DISPCNT |= DCNT_BG1; // enable background 1
 
-	// const u8 notes[12]= {NOTE_CIS, NOTE_D, NOTE_DIS, NOTE_E, NOTE_CIS, NOTE_D, NOTE_DIS, NOTE_E, NOTE_DIS, NOTE_D, NOTE_CIS, NOTE_C};
-    // const u8 lens[12]= { 2, 2, 2, 4, 2, 2, 2, 4, 2, 2, 2, 4 };
+	const u8 notes[12]= {NOTE_CIS, NOTE_D, NOTE_DIS, NOTE_E, NOTE_CIS, NOTE_D, NOTE_DIS, NOTE_E, NOTE_DIS, NOTE_D, NOTE_CIS, NOTE_C};
+    const u8 lens[12]= { 2, 2, 2, 4, 2, 2, 2, 4, 2, 2, 2, 4 };
 
 	// play music until key press
 	while(!key_was_down(KEY_START)){
 
-		for(int i=0; i< 12 ; i++)
-		{
+		for(int i=0; i< 12 ; i++){
 			key_poll();
 			if(key_is_down(KEY_START)){
 				break;
 			}
-			// note_play(notes[i], -1);
-			// VBlankIntrDelay(8*lens[i]);
+			note_play(notes[i], -1);
+			VBlankIntrDelay(8*lens[i]);
 		}
 		
 	}

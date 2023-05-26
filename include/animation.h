@@ -1,6 +1,8 @@
 #ifndef ANIMATION
 #define ANIMATION
 
+#include "sprites.h"
+
 // TRAVEL SPEED
 #define PLAYER_SPEED 		5
 #define APPLE_SPEED 		7
@@ -18,10 +20,10 @@ extern int skid; // bool for if a player skid occurred
 extern int showing_map; // bool for if map is showing
 extern int throwing; // bool for if player is throwing
 
+void squirrel_kill_animation(Sprite *squirrel);
 void input();
-void finalize_sprite_positions();
 void update_sprite_positions();
 void check_sprite_collisions();
-
+void spawn_squirrel(int index);
 
 #endif /*ANIMATION*/

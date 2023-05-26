@@ -46,11 +46,19 @@ extern Sprite* apples[APPLE_MAX]; // array of building sprite pointers
 extern Sprite* squirrels[SQUIRREL_MAX]; // array of building sprite pointers
 extern Sprite* buildings[BUILDINGS_MAX]; // array of building sprite pointers
 
+extern int round_number; // current round number
+extern float player_score; // players score
+extern int squirrel_count; // number of squirrels still alive
+extern float building_health[8]; // health for each building
+extern int minutes;
+extern int seconds;
+
 void sprites_init();
 void scale_sprite(Sprite *sprite, OBJ_AFFINE *obj_aff_buffer_location, int obj_affine_num, int scale_factor);
 void set_player_attributes();
 void set_apple_attributes();
 void set_squirrel_attributes();
 void set_building_attributes();
+void finalize_sprite_positions();
 
 #endif /* SPRITES */
