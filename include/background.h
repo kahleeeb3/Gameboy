@@ -12,5 +12,6 @@ void map_init();
 void mini_map_init();
 void loading_screen_init();
 void loading_screen_display();
+void window_init();
 
 #endif /*BACKGROUND*/

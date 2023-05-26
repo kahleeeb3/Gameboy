@@ -65,7 +65,6 @@ Sprite *mkSpriteStruct(int ob_index, int size, int tile_id, int pal_bank, int x,
 
     // set the struct values
     newSprite->mem_addr = &obj_buffer[ob_index];
-	newSprite->throwing = 0; // no sprites should be throwing
 	// newSprite->hidden = hidden; // set elsewhere
     newSprite->active = 0; // no sprite should be active at start
 	newSprite->size = size;
@@ -101,6 +100,7 @@ Sprite *mkSpriteStruct(int ob_index, int size, int tile_id, int pal_bank, int x,
 
     // set object attribute 2
     newSprite->mem_addr->attr2 = ATTR2_PALBANK(newSprite->pal_bank) | newSprite->curr_tile;
+	newSprite->mem_addr->attr2 |=  ATTR2_PRIO(1); // set priority
 
 
     obj_set_pos(newSprite->mem_addr, x, y); // set the objects position
@@ -215,8 +215,8 @@ void set_building_attributes()
         Sprite *new_building = mkSpriteStruct(sprite_num, -1, BUILDING_TILE_ID+(i*32), BUILDINGS_PAL_BANK, x, y, hbx, hby);
 
         // set unassigned values
-        // new_building->target = 0; // has no target
         new_building->index = i; // which building in the building array is this
+		new_building->active = 1; // all buildings are active at start
 
         scale_sprite(new_building, &obj_aff_buffer[i], i, 2); // scale by a factor of 2
 

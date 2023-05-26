@@ -174,6 +174,9 @@ void loading_screen_display()
 		
 	}
 
+	// change palette color from green to black
+	// this prevents a weird flash of green before
+	// starting the actual game
 	pal_bg_bank[0][0] = CLR_BLACK;
 	pal_bg_bank[1][0] = CLR_BLACK;
 	pal_bg_bank[2][0] = CLR_BLACK;
@@ -181,4 +184,40 @@ void loading_screen_display()
 	REG_DISPCNT ^= DCNT_BG2; // disable background 2
 	REG_DISPCNT ^= DCNT_OBJ; // disable objects
 	
+}
+
+void window_init()
+{
+    
+	/*
+	 * Window 0 will display the minimap and text
+	 * Window 1 will display everything except background 2
+	 * This will allow for updating the building health
+	 * and score at the same time but only showing one.
+	 * We will enable/disable window 0 to show minimap
+	 */
+	
+	
+	// strcut for storing window borders { left, top, right, bottom }
+	typedef struct tagRECT_U8 { u8 ll, tt, rr, bb; } ALIGN4 RECT_U8;
+
+	// define window positions
+	RECT_U8 win[2]= 
+	{
+		{ 48, 8,  193,  152 },  // win0: minimap display
+		{ 0, 0 ,SCREEN_WIDTH, 24 } // win1: text at top of screen
+
+	};
+	
+	// set positions
+	REG_WIN0H= win[0].ll<<8 | win[0].rr;
+    REG_WIN1H= win[1].ll<<8 | win[1].rr;
+    REG_WIN0V= win[0].tt<<8 | win[0].bb;
+    REG_WIN1V= win[1].tt<<8 | win[1].bb;
+
+	REG_DISPCNT |= DCNT_WIN1; // enable window 1
+
+	// define what goes in each window
+	REG_WININ= WININ_BUILD( (WIN_BG0|WIN_BG2), (WIN_ALL) );
+	REG_WINOUT= WINOUT_BUILD((WIN_OBJ|WIN_BG1), 0);
 }

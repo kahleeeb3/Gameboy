@@ -24,7 +24,6 @@
 // sprite struct
 typedef struct{
 	OBJ_ATTR *mem_addr; // pointer to sprite location in object mem
-	int throwing; // bool value for if the player sprite threw an apple
 	int hidden; // bool for if the sprite is visible or not
     int active; // if the sprite is an active part of the game (visibility)
 	int size; // number of pixels in the horizontal direction
@@ -48,6 +47,7 @@ extern Sprite* squirrels[SQUIRREL_MAX]; // array of building sprite pointers
 extern Sprite* buildings[BUILDINGS_MAX]; // array of building sprite pointers
 
 void sprites_init();
+void scale_sprite(Sprite *sprite, OBJ_AFFINE *obj_aff_buffer_location, int obj_affine_num, int scale_factor);
 void set_player_attributes();
 void set_apple_attributes();
 void set_squirrel_attributes();
