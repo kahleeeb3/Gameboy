@@ -8,31 +8,98 @@
 
 int countdown_time = 3;
 u32 time_elapsed;
+int squirrels_attacking_player;
+int squirrels_attacking_building[8];
 
-
-void temp()
+void set_round_data(int round_number)
 {
-	// TEMPORARY
-	spawn_squirrel(0);
-	spawn_squirrel(1);
-	spawn_squirrel(2);
-	spawn_squirrel(3);
-	spawn_squirrel(4);
-	spawn_squirrel(5);
-	spawn_squirrel(6);
-	spawn_squirrel(7);
-	spawn_squirrel(8);
-	squirrels[0]->target = 1;
-	squirrels[1]->target = 3;
-	squirrels[2]->target = 5;
-	squirrels[3]->target = 7;
-	squirrels[4]->target = 9;
-	squirrels[5]->target = 11;
-	squirrels[6]->target = 13;
-	squirrels[7]->target = 15;
-	squirrels[8]->target = -1;
+	switch (round_number){
+		case 1: // one squirrel attack player
+			squirrels_attacking_player = 1;
+			squirrels_attacking_building[0] = 0;
+			squirrels_attacking_building[1] = 0;
+			squirrels_attacking_building[2] = 0;
+			squirrels_attacking_building[3] = 0;
+			squirrels_attacking_building[4] = 0;
+			squirrels_attacking_building[5] = 0;
+			squirrels_attacking_building[6] = 0;
+			squirrels_attacking_building[7] = 0;
+			break;
+		case 2:
+			squirrels_attacking_player = 0;
+			squirrels_attacking_building[0] = 1;
+			squirrels_attacking_building[1] = 1;
+			squirrels_attacking_building[2] = 1;
+			squirrels_attacking_building[3] = 0;
+			squirrels_attacking_building[4] = 0;
+			squirrels_attacking_building[5] = 0;
+			squirrels_attacking_building[6] = 0;
+			squirrels_attacking_building[7] = 0;
+			break;
+		case 3:
+			squirrels_attacking_player = 5;
+			squirrels_attacking_building[0] = 1;
+			squirrels_attacking_building[1] = 1;
+			squirrels_attacking_building[2] = 1;
+			squirrels_attacking_building[3] = 1;
+			squirrels_attacking_building[4] = 1;
+			squirrels_attacking_building[5] = 1;
+			squirrels_attacking_building[6] = 1;
+			squirrels_attacking_building[7] = 1;
+			break;
+		case 4:
+			squirrels_attacking_player = 20;
+			squirrels_attacking_building[0] = 3;
+			squirrels_attacking_building[1] = 3;
+			squirrels_attacking_building[2] = 3;
+			squirrels_attacking_building[3] = 3;
+			squirrels_attacking_building[4] = 3;
+			squirrels_attacking_building[5] = 3;
+			squirrels_attacking_building[6] = 3;
+			squirrels_attacking_building[7] = 3;
+			break;
+		default:
+			squirrels_attacking_player = qran_range(0, 5);
+			squirrels_attacking_building[0] = qran_range(0, 5);
+			squirrels_attacking_building[1] = qran_range(0, 5);
+			squirrels_attacking_building[2] = qran_range(0, 5);
+			squirrels_attacking_building[3] = qran_range(0, 5);
+			squirrels_attacking_building[4] = qran_range(0, 5);
+			squirrels_attacking_building[5] = qran_range(0, 5);
+			squirrels_attacking_building[6] = qran_range(0, 5);
+			squirrels_attacking_building[7] = qran_range(0, 5);
+			break;
+	}
+}
 
-	squirrels[8]->pal_bank = 3;
+void assign_squirrel_targets()
+{
+	// for each value in that list
+	for(int target_index = 0; target_index < 8; target_index++){
+
+		int selected_value = squirrels_attacking_building[target_index]; // select the value
+		int building_index = (target_index * 2) + 1; // select target building index
+		
+		// count up from 0 to that value
+		for(int i=0; i< selected_value; i++){
+			Sprite *squirrel = squirrels[squirrel_count]; // select squirrel
+			squirrel->target = building_index; // assign it a target
+			spawn_squirrel(squirrel_count); // spawn it in
+			squirrel_count++; // increase squirrel count
+			squirrel->pal_bank = 2; // change squirrel color
+		}
+	}
+
+	// assign squirrels to the player
+	for(int i =0; i<squirrels_attacking_player; i++){
+		Sprite *squirrel = squirrels[squirrel_count]; // select squirrel
+		squirrel->target = -1; // assign it a target (-1 for player)
+		spawn_squirrel(squirrel_count); // spawn it in
+		squirrel_count++; // increase squirrel count
+		squirrel->pal_bank = 3; // set squirrel color
+	}
+
+
 }
 
 void game_over()
@@ -55,6 +122,7 @@ void game_over()
 	// reset scores
 	player_score = 0;
 	squirrel_count = 0;
+	round_number = 1;
 	time_elapsed = timer_reset();
 	countdown_time = 3;
 
@@ -80,10 +148,6 @@ void play_game()
 
 	while(1){
 		
-		if(player_score < 0){
-			game_over();
-		}
-
 		// slow player input a little
 		for (int i = 0; i < 4; i++){
 			vid_vsync(); // wait for VBlank
@@ -102,10 +166,22 @@ void play_game()
 				countdown_time--; // decrease countdown time
 			}
 			else if (countdown_time == -1){
-				temp(); // spawn squirrels
+				set_round_data(round_number);
+				assign_squirrel_targets(); // spawn squirrels
 				countdown_time--; // decrease countdown time
 			}
 
+		}
+
+		// if player died
+		if(player_score < 0){
+			game_over();
+		}
+
+		// if all the squirrels are dead
+		if(squirrel_count == 0 && countdown_time == -2){
+			round_number++;
+			countdown_time = 3;
 		}
 
 		input(); // get player input and move character
@@ -123,8 +199,8 @@ int main()
 
 	sound_init(); // configure sound
 	timer_init(); // initialize timer
-	// loading_screen_init(); // load data for loading screen
-	// loading_screen_display(); // run loading screen animation
+	loading_screen_init(); // load data for loading screen
+	loading_screen_display(); // run loading screen animation
 
 	// update the sprite data
 	sprites_init(); // move sprite data into obj_buffer

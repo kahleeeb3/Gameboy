@@ -539,7 +539,7 @@ void update_sprite_positions()
 
 
 			// if it was off screen but now is not
-			if(!squirrel->hidden){
+			if(squirrel->hidden){
 				if(off_screen(squirrel) == 0){
 					obj_unhide(squirrel->mem_addr, ATTR1_SIZE_16);
 				}
@@ -608,8 +608,9 @@ void check_sprite_collisions()
 
 			// if the squirrel is hitting a player and is targeting the player
 			if( collision(squirrel, player, player->hbx, player->hby) && squirrel->target == -1 ){
-				player_score -=5;
 				squirrel_kill_animation(squirrel);
+				squirrel_count--;
+				player_score -= 5;
 			}
 
 		}
